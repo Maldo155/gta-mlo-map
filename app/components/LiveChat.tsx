@@ -61,12 +61,13 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
     if (open && threadId) {
       fetch(`/api/chat?threadId=${threadId}`)
         .then((r) => r.json())
-        .then((d) => setMessages(d.messages ?? []))
+        .then((d) => setMessages(Array.isArray(d?.messages) ? d.messages : []))
         .catch(() => setMessages([]));
       pollRef.current = setInterval(() => {
         fetch(`/api/chat?threadId=${threadId}`)
           .then((r) => r.json())
-          .then((d) => setMessages(d.messages ?? []));
+          .then((d) => setMessages(Array.isArray(d?.messages) ? d.messages : []))
+          .catch(() => {});
       }, POLL_INTERVAL_MS);
     }
     return () => {
@@ -141,7 +142,7 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
       setThreadId(data.threadId);
       localStorage.setItem(CHAT_STORAGE_KEY, data.threadId);
     }
-    if (data.messages?.length) {
+    if (Array.isArray(data.messages) && data.messages.length) {
       setMessages((m) => [...m, ...data.messages]);
     }
   }
@@ -303,9 +304,9 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
           ) : (
             <>
               <div style={chatStyles.messages}>
-                {messages.map((m) => (
-                  <div key={m.id} style={chatStyles.msgBubble(m.from_visitor)}>
-                    {m.content}
+                {messages.map((m, i) => (
+                  <div key={m?.id ?? `msg-${i}`} style={chatStyles.msgBubble(Boolean(m?.from_visitor))}>
+                    {m?.content ?? ""}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />

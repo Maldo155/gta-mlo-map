@@ -12,7 +12,7 @@ const MAX_MESSAGE = 2000;
  */
 export async function POST(req: Request) {
   const secret = req.headers.get("x-discord-reply-secret") || "";
-  const expected = process.env.CHAT_DISCORD_REPLY_SECRET;
+  const expected = process.env["CHAT_DISCORD_REPLY_SECRET"];
   if (!expected || secret !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

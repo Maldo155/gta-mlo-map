@@ -4,6 +4,7 @@ import "./globals.css";
 import { LanguageProvider } from "./components/LanguageProvider";
 import LiveChat from "./components/LiveChat";
 import VisitCounter from "./components/VisitCounter";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -98,20 +99,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LanguageProvider>
-          {children}
-          <footer className="site-footer">
-            <div className="footer-brand">MLOMesh</div>
-            <div className="footer-tagline">
-              Interactive MLO discovery hub for creators and players.
-            </div>
-            <div className="footer-copyright">
-              © {year} MLOMesh. All rights reserved.
-            </div>
-          </footer>
-          <LiveChat floating={true} />
-          <VisitCounter />
-        </LanguageProvider>
+        <ErrorBoundary>
+          <LanguageProvider>
+            {children}
+            <footer className="site-footer">
+              <div className="footer-brand">MLOMesh</div>
+              <div className="footer-tagline">
+                Interactive MLO discovery hub for creators and players.
+              </div>
+              <div className="footer-copyright">
+                © {year} MLOMesh. All rights reserved.
+              </div>
+            </footer>
+            <LiveChat floating={true} />
+            <VisitCounter />
+          </LanguageProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

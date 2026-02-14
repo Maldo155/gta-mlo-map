@@ -16,8 +16,8 @@ require("dotenv").config({ path: require("path").join(__dirname, "..", "..", ".e
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 const PARENT_CHANNEL_ID = process.env.DISCORD_CHAT_CHANNEL_ID;
-const SECRET = process.env.CHAT_DISCORD_REPLY_SECRET;
-const API_BASE = (process.env.CHAT_API_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://mlomesh.vercel.app").replace(/\/$/, "");
+const SECRET = process.env["CHAT_DISCORD_REPLY_SECRET"];
+const API_BASE = (process.env["CHAT_API_URL"] || process.env.NEXT_PUBLIC_SITE_URL || "https://mlomesh.vercel.app").replace(/\/$/, "");
 
 if (!process.env.DISCORD_BOT_TOKEN || !PARENT_CHANNEL_ID || !SECRET) {
   console.error("Missing env: DISCORD_BOT_TOKEN, DISCORD_CHAT_CHANNEL_ID, CHAT_DISCORD_REPLY_SECRET");
