@@ -1,0 +1,11 @@
+# Railway config for Discord bot (24/7 hosting)
+# Deploy only the bot - no Next.js build
+
+[build]
+builder = "nixpacks"
+buildCommand = "npm install"
+
+[deploy]
+startCommand = "npm run bot"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10

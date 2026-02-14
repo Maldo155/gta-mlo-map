@@ -1,0 +1,2 @@
+-- Optional: Run in Supabase SQL Editor if using anon key for submit.
+-- The submit form now tries: service role → anon → direct DB (SUPABASE_DB_URL).

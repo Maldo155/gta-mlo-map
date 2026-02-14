@@ -1,0 +1,38 @@
+{
+  "name": "gta-mlo-map",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "discord-setup": "node scripts/discord-setup.js",
+    "bot": "node scripts/discord-chat-bot/index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1",
+    "emoji-picker-react": "^4.18.0",
+    "leaflet": "^1.9.4",
+    "next": "16.1.6",
+    "pg": "^8.18.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-leaflet": "^5.0.0",
+    "sharp": "^0.34.5",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^25.2.0",
+    "@types/pg": "^8.16.0",
+    "@types/react": "19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.24",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  }
+}
