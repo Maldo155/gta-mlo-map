@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useLanguage } from "./LanguageProvider";
-import { CATEGORIES } from "@/app/lib/categories";
+import { useVisitedMloIds } from "@/app/hooks/useVisitedMloIds";
+import CategorySelect from "./CategorySelect";
+import ViewDetailsLink from "./ViewDetailsLink";
+import { CATEGORIES, type CategoryKey } from "@/app/lib/categories";
 
 type MLO = {
   id: string;
@@ -24,6 +27,8 @@ type Props = {
   adminToken?: string;
   selectedId?: string | null;
   viewCounts?: Record<string, number>;
+  /** URL to navigate to when user clicks back from MLO detail page */
+  returnTo?: string;
 };
 
 export default function Sidebar({
@@ -34,8 +39,10 @@ export default function Sidebar({
   adminToken,
   selectedId,
   viewCounts = {},
+  returnTo = "/map",
 }: Props) {
   const { t } = useLanguage();
+  const visitedIds = useVisitedMloIds();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<MLO | null>(null);
 
@@ -172,18 +179,10 @@ export default function Sidebar({
                 }
                 placeholder={t("sidebar.website")}
               />
-              <select
-                value={draft.category}
-                onChange={(e) =>
-                  setDraft({ ...draft, category: e.target.value })
-                }
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.icon} {t(`categories.${c.key}`)}
-                  </option>
-                ))}
-              </select>
+              <CategorySelect
+                value={draft.category as CategoryKey}
+                onChange={(v) => setDraft({ ...draft, category: v })}
+              />
               <input
                 value={draft.tag ?? ""}
                 onChange={(e) =>
@@ -221,7 +220,15 @@ export default function Sidebar({
             </>
           ) : (
             <>
-              <h3>{mlo.name}</h3>
+              <h3>
+                <ViewDetailsLink
+                  mloId={mlo.id}
+                  href={`/mlo/${mlo.id}?returnTo=${encodeURIComponent(returnTo)}`}
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  {mlo.name}
+                </ViewDetailsLink>
+              </h3>
               <div style={{ opacity: 0.7 }}>{mlo.creator}</div>
               {mlo.tag && (
                 <div style={{ opacity: 0.7, fontSize: 12 }}>
@@ -265,28 +272,47 @@ export default function Sidebar({
                 </div>
               )}
 
-              {mlo.website_url && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginTop: 8,
-                    gap: 8,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleCreatorClick(mlo)}
-                    style={{ background: "transparent", border: "none", color: "#93c5fd", padding: 0 }}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 8,
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: "flex", gap: 12 }}>
+                  <ViewDetailsLink
+                    mloId={mlo.id}
+                    href={`/mlo/${mlo.id}?returnTo=${encodeURIComponent(returnTo)}`}
+                    style={{
+                      color: visitedIds.has(mlo.id) ? "#c4b5fd" : "#93c5fd",
+                      fontSize: 13,
+                      ...(visitedIds.has(mlo.id)
+                        ? {
+                            fontWeight: 600,
+                            textShadow: "0 0 8px rgba(139, 92, 246, 0.5)",
+                          }
+                        : {}),
+                    }}
                   >
-                    {t("sidebar.visitCreator")}
-                  </button>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    {t("views.label")}: {viewCounts[mlo.id] ?? 0}
-                  </div>
+                    {t("sidebar.viewDetails")}
+                  </ViewDetailsLink>
+                  {mlo.website_url && (
+                    <button
+                      type="button"
+                      onClick={() => handleCreatorClick(mlo)}
+                      style={{ background: "transparent", border: "none", color: "#93c5fd", padding: 0 }}
+                    >
+                      {t("sidebar.visitCreator")}
+                    </button>
+                  )}
                 </div>
-              )}
+                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                  {t("views.label")}: {viewCounts[mlo.id] ?? 0}
+                </div>
+              </div>
 
               {adminToken && (
                 <div style={{ display: "flex", gap: 8, marginTop: 8 }}>

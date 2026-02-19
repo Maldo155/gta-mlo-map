@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, CategoryKey } from "@/app/lib/categories";
+import CategorySelect from "./CategorySelect";
 import { useLanguage } from "./LanguageProvider";
 
 type Slot = {
@@ -155,9 +156,18 @@ export default function MloFormMulti({
     });
   }
 
+  function parseCoord(val: string): number {
+    const s = val.trim();
+    if (!s) return NaN;
+    // Accept "123", "123.45", "-1910, 73" (take first number)
+    const first = s.split(/[,\s]+/)[0]?.trim();
+    const n = first ? Number(first) : NaN;
+    return Number.isFinite(n) ? n : NaN;
+  }
+
   function isSlotComplete(slot: Slot) {
-    const xNum = slot.x.trim() === "" ? NaN : Number(slot.x);
-    const yNum = slot.y.trim() === "" ? NaN : Number(slot.y);
+    const xNum = parseCoord(slot.x);
+    const yNum = parseCoord(slot.y);
     return (
       Boolean(slot.name.trim()) &&
       Boolean(slot.creator.trim()) &&
@@ -185,8 +195,8 @@ export default function MloFormMulti({
       const slot = slots[i];
       if (!isSlotComplete(slot) || !slot.image) continue;
 
-      const xNum = Number(slot.x);
-      const yNum = Number(slot.y);
+      const xNum = parseCoord(slot.x);
+      const yNum = parseCoord(slot.y);
 
       const form = new FormData();
       form.append("name", slot.name);
@@ -415,26 +425,14 @@ export default function MloFormMulti({
                   {t("mloForm.cascadeToAll")} {t("mloForm.category")}
                 </label>
               )}
-              <select
+              <CategorySelect
                 value={slot.category}
-                onChange={(e) =>
-                  updateSlot(index, {
-                    category: e.target.value as CategoryKey,
-                  })
-                }
+                onChange={(v) => updateSlot(index, { category: v })}
                 disabled={index > 0 && cascadeFromFirst.category}
                 style={
-                  index > 0 && cascadeFromFirst.category
-                    ? { flex: 1, opacity: 0.9, background: "#1e293b" }
-                    : { flex: 1 }
+                  index > 0 && cascadeFromFirst.category ? { opacity: 0.9 } : undefined
                 }
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.icon} {t(`categories.${c.key}`)}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <input

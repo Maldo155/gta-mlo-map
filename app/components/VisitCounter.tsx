@@ -47,6 +47,7 @@ export default function VisitCounter() {
         fontSize: 12,
         letterSpacing: 0.4,
         boxShadow: "0 10px 22px rgba(0,0,0,0.35)",
+        maxWidth: "calc(100vw - 90px)",
       }}
     >
       {t("home.visits")}: {count.toLocaleString()}

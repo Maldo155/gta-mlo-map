@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CategoryKey } from "@/app/lib/categories";
+import CategorySelect from "../components/CategorySelect";
+import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
 
@@ -144,9 +146,7 @@ export default function SubmitPage() {
           <div className="header-top">
             <div className="header-brand" />
             <div className="header-actions">
-              <span className="header-pill">
-                Discord
-              </span>
+              <DiscordLink />
               <LanguageSelect />
             </div>
           </div>
@@ -163,16 +163,13 @@ export default function SubmitPage() {
             <a href="/creators" className="header-link">
               {t("nav.creators")}
             </a>
-            <a href="/requests" className="header-link">
-              {t("nav.requests")}
-            </a>
             <a href="/submit" className="header-link">
               {t("nav.submit")}
             </a>
           </nav>
         </header>
 
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: 20 }}>
+        <div className="submit-page-wrap" style={{ maxWidth: 720, margin: "0 auto", padding: 20 }}>
           <button onClick={handleBack} style={{ marginBottom: 12 }}>
             ← {t("submit.back")}
           </button>
@@ -197,16 +194,10 @@ export default function SubmitPage() {
               value={websiteUrl}
               onChange={(e) => setWebsiteUrl(e.target.value)}
             />
-            <select
+            <CategorySelect
               value={category}
-              onChange={(e) => setCategory(e.target.value as CategoryKey)}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.icon} {t(`categories.${c.key}`)}
-                </option>
-              ))}
-            </select>
+              onChange={setCategory}
+            />
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 placeholder={t("submit.x")}

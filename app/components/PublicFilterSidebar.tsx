@@ -1,9 +1,145 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import CategoryIcon from "./CategoryIcon";
 import CoordinateSearch from "./CoordinateSearch";
 import { CATEGORIES, CategoryKey } from "@/app/lib/categories";
 import { useLanguage } from "./LanguageProvider";
+
+const GOLD_STAR = "#fde68a";
+
+function CreatorSelect({
+  selectedCreator,
+  onCreatorChange,
+  creatorOptions,
+  allCreatorsLabel,
+}: {
+  selectedCreator: string;
+  onCreatorChange: (key: string) => void;
+  creatorOptions: { key: string; label: string; count: number; partnership?: boolean }[];
+  allCreatorsLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  const selected = selectedCreator
+    ? creatorOptions.find((o) => o.key === selectedCreator)
+    : null;
+  const displayText = selected
+    ? `${selected.partnership ? "★ " : ""}${selected.label} (${selected.count})`
+    : allCreatorsLabel;
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: "100%",
+          padding: "9px 11px",
+          borderRadius: 6,
+          border: "1px solid #2c3752",
+          background: "#0f1528",
+          color: "#e5e7eb",
+          fontSize: 14,
+          cursor: "pointer",
+          textAlign: "left",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selected && selected.partnership ? (
+            <>
+              <span style={{ color: GOLD_STAR }}>★</span> {selected.label} ({selected.count})
+            </>
+          ) : (
+            displayText
+          )}
+        </span>
+        <span style={{ opacity: 0.7, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "100%",
+            marginTop: 4,
+            maxHeight: 240,
+            overflowY: "auto",
+            background: "#0f1528",
+            border: "1px solid #2c3752",
+            borderRadius: 6,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            zIndex: 100,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onCreatorChange("");
+              setOpen(false);
+            }}
+            style={{
+              width: "100%",
+              padding: "9px 11px",
+              background: !selectedCreator ? "#1e3a5f" : "transparent",
+              border: "none",
+              color: "#e5e7eb",
+              fontSize: 14,
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            {allCreatorsLabel}
+          </button>
+          {creatorOptions.map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => {
+                onCreatorChange(opt.key);
+                setOpen(false);
+              }}
+              style={{
+                width: "100%",
+                padding: "9px 11px",
+                background: selectedCreator === opt.key ? "#1e3a5f" : "transparent",
+                border: "none",
+                color: "#e5e7eb",
+                fontSize: 14,
+                cursor: "pointer",
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {opt.partnership && (
+                <span style={{ color: GOLD_STAR, flexShrink: 0 }}>★</span>
+              )}
+              <span>{opt.label}</span>
+              <span style={{ opacity: 0.7, marginLeft: "auto" }}>({opt.count})</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type Props = {
   search: string;
@@ -15,7 +151,7 @@ type Props = {
   totalMlos?: number;
   selectedCreator?: string;
   onCreatorChange?: (creatorKey: string) => void;
-  creatorOptions?: { key: string; label: string; count: number }[];
+  creatorOptions?: { key: string; label: string; count: number; partnership?: boolean }[];
 };
 
 export default function PublicFilterSidebar({
@@ -103,31 +239,24 @@ export default function PublicFilterSidebar({
 
       {/* CREATOR FILTER */}
       {creatorOptions.length > 0 && onCreatorChange && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6 }}>
-            {t("filters.creator")}
+        <div
+          style={{
+            marginBottom: 12,
+            padding: 10,
+            borderRadius: 8,
+            border: "2px solid rgba(30,58,138,0.7)",
+            background: "rgba(59,130,246,0.08)",
+          }}
+        >
+          <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 6 }}>
+            <strong>{t("filters.searchByCreator")}</strong> ({creatorOptions.length})
           </div>
-          <select
-            value={selectedCreator}
-            onChange={(e) => onCreatorChange(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "8px 10px",
-              borderRadius: 6,
-              border: "1px solid #2c3752",
-              background: "#0f1528",
-              color: "#e5e7eb",
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            <option value="">{t("filters.allCreators")}</option>
-            {creatorOptions.map((opt) => (
-              <option key={opt.key} value={opt.key}>
-                {opt.label} ({opt.count})
-              </option>
-            ))}
-          </select>
+          <CreatorSelect
+            selectedCreator={selectedCreator}
+            onCreatorChange={onCreatorChange!}
+            creatorOptions={creatorOptions}
+            allCreatorsLabel={t("filters.allCreators")}
+          />
         </div>
       )}
 
@@ -161,10 +290,9 @@ export default function PublicFilterSidebar({
 
       {/* CATEGORY FILTERS */}
       {!collapsed && (
-        <div className="map-categories" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="map-categories" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 6, flexShrink: 0 }}>
             <span>{t("filters.categories")}</span>
-            <span style={{ fontWeight: 600, opacity: 1 }}>({totalMlos})</span>
           </div>
           <div className="map-categories-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
             {CATEGORIES.map((cat) => {
@@ -190,7 +318,7 @@ export default function PublicFilterSidebar({
                   }}
                 >
                   <span>
-                    {cat.icon} {t(`categories.${cat.key}`)}
+                    <CategoryIcon cat={cat} size={18} /> {t(`categories.${cat.key}`)}
                   </span>
                   <span style={{ opacity: 0.7, fontSize: 12 }}>
                     {categoryCounts[cat.key] ?? 0}

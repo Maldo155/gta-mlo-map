@@ -68,16 +68,21 @@ const searchResultIcon = new L.Icon({
   iconAnchor: [16, 16],
 });
 
-const categoryIconMap = Object.fromEntries(
-  CATEGORIES.map((cat) => [cat.key, cat.icon])
+const categoryByKey = Object.fromEntries(
+  CATEGORIES.map((cat) => [cat.key, cat])
 );
 
 function getCategoryIcon(category?: string | null) {
-  const icon = category ? categoryIconMap[category] : null;
-  if (!icon) return markerIcon;
+  const cat = category ? categoryByKey[category] : null;
+  if (!cat) return markerIcon;
+  const iconImage = (cat as { iconImage?: string }).iconImage;
+  const inner =
+    iconImage
+      ? `<img src="${iconImage}" alt="" style="width:18px;height:18px;object-fit:contain;" />`
+      : (cat as { icon: string }).icon;
   return L.divIcon({
     className: "",
-    html: `<div style="width:28px;height:28px;border-radius:999px;background:#10162b;border:1px solid #243046;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 6px 14px rgba(0,0,0,0.35);">${icon}</div>`,
+    html: `<div style="width:28px;height:28px;border-radius:999px;background:#10162b;border:1px solid #243046;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 6px 14px rgba(0,0,0,0.35);">${inner}</div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });

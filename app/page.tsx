@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import DiscordLink from "./components/DiscordLink";
 import LanguageSelect from "./components/LanguageSelect";
 import { useLanguage } from "./components/LanguageProvider";
 
@@ -49,6 +50,12 @@ export default function Home() {
   const [creatorTiles, setCreatorTiles] = useState<
     { creator_key: string; logo_url?: string | null; banner_url?: string | null; spotlight_logo_size?: number | null }[]
   >([]);
+  const [spotlightCreatorsData, setSpotlightCreatorsData] = useState<
+    { creator_key: string; logo_url: string | null; spotlight_logo_size: number; verified_creator: boolean; partnership: boolean; displayName: string; count: number }[]
+  >([]);
+  const [partnersCreatorsData, setPartnersCreatorsData] = useState<
+    { creator_key: string; logo_url: string | null; spotlight_logo_size: number; displayName: string; count: number }[]
+  >([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [requestTitle, setRequestTitle] = useState("");
   const [requestDetails, setRequestDetails] = useState("");
@@ -67,6 +74,12 @@ export default function Home() {
     Record<string, "up" | "down">
   >({});
   const DETAILS_MAX = 280;
+
+  /** Set to true when ready to show the Partners section on the homepage */
+  const SHOW_PARTNERS_SECTION = true;
+
+  /** Set to true when ready to show the Reviews section on the homepage */
+  const SHOW_REVIEWS_SECTION = false;
 
   // MLO conveyor speed (seconds per full cycle). Higher = slower. Edit this to change scroll speed.
   const MLO_CONVEYOR_SPEED_SEC = 400;
@@ -118,6 +131,30 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    function fetchSpotlight() {
+      fetch("/api/creator-tiles/spotlight", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((json) => setSpotlightCreatorsData(json.creators || []))
+        .catch(() => setSpotlightCreatorsData([]));
+    }
+    fetchSpotlight();
+    const interval = setInterval(fetchSpotlight, 5_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    function fetchPartners() {
+      fetch("/api/creator-tiles/partners", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((json) => setPartnersCreatorsData(json.creators || []))
+        .catch(() => setPartnersCreatorsData([]));
+    }
+    fetchPartners();
+    const interval = setInterval(fetchPartners, 5_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     fetch("/api/requests", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setRequests(d.requests || []));
@@ -134,9 +171,8 @@ export default function Home() {
     }
   }, []);
 
-
   const featuredMlos = useMemo(() => {
-    return [...mlos].slice(0, 4);
+    return [...mlos].slice(0, 6);
   }, [mlos]);
 
   const conveyorMlos = useMemo(() => {
@@ -188,6 +224,8 @@ export default function Home() {
           creator_key: t.creator_key,
           logo_url: t.logo_url || null,
           spotlight_logo_size: size,
+          verified_creator: (t as { verified_creator?: boolean }).verified_creator === true,
+          partnership: (t as { partnership?: boolean }).partnership === true,
           displayName,
           count,
         };
@@ -195,6 +233,51 @@ export default function Home() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, [creatorTiles, mlos]);
+
+  const displayedSpotlight = useMemo(() => {
+    if (spotlightCreatorsData.length > 0) return spotlightCreatorsData.slice(0, 5);
+    return spotlightCreators;
+  }, [spotlightCreatorsData, spotlightCreators]);
+
+  const partnersCreators = useMemo(() => {
+    const tiles = Array.isArray(creatorTiles) ? creatorTiles : [];
+    const partners = tiles.filter(
+      (t) => t.creator_key && (t as { partnership?: boolean }).partnership === true && (t.logo_url || t.banner_url)
+    );
+    if (partners.length === 0) return [];
+    const countByKey: Record<string, number> = {};
+    const displayNameByKey: Record<string, string> = {};
+    for (const mlo of mlos) {
+      const key = (mlo.creator || "").trim().toLowerCase();
+      if (!key) continue;
+      countByKey[key] = (countByKey[key] || 0) + 1;
+      if (!(key in displayNameByKey)) displayNameByKey[key] = (mlo.creator || "").trim();
+    }
+    return partners
+      .map((t) => {
+        const tileKey = (t.creator_key || "").trim().toLowerCase();
+        const displayName = displayNameByKey[tileKey] || t.creator_key;
+        const count = countByKey[tileKey] ?? 0;
+        const size =
+          (t as { spotlight_logo_size?: number | null }).spotlight_logo_size != null &&
+          Number.isFinite(Number((t as { spotlight_logo_size?: number | null }).spotlight_logo_size))
+            ? Math.min(100, Math.max(15, Number((t as { spotlight_logo_size?: number }).spotlight_logo_size)))
+            : 60;
+        return {
+          creator_key: t.creator_key,
+          logo_url: t.logo_url || null,
+          spotlight_logo_size: size,
+          displayName,
+          count,
+        };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [creatorTiles, mlos]);
+
+  const displayedPartners = useMemo(() => {
+    if (partnersCreatorsData.length > 0) return partnersCreatorsData;
+    return partnersCreators;
+  }, [partnersCreatorsData, partnersCreators]);
 
   const latestRequests = useMemo(() => {
     return [...requests].slice(0, 4);
@@ -315,9 +398,7 @@ export default function Home() {
           <div className="header-top">
             <div className="header-brand" />
             <div className="header-actions">
-              <span className="header-pill">
-                Discord
-              </span>
+              <DiscordLink />
               <button
                 type="button"
                 className="header-contact"
@@ -352,9 +433,6 @@ export default function Home() {
           </a>
           <a href="/creators" className="header-link">
             {t("nav.creators")}
-          </a>
-          <a href="/requests" className="header-link">
-            {t("nav.requests")}
           </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}
@@ -745,9 +823,9 @@ export default function Home() {
                 background: "#10162b",
               }}
             >
-              {spotlightCreators.length > 0 ? (
+              {displayedSpotlight.length > 0 ? (
                 <div style={{ display: "grid", gap: 8 }}>
-                  {spotlightCreators.map((creator) => (
+                  {displayedSpotlight.map((creator) => (
                     <a
                       key={creator.creator_key}
                       href="/creators"
@@ -793,6 +871,43 @@ export default function Home() {
                           <span style={{ fontWeight: 700, fontSize: 14 }}>{creator.displayName}</span>
                         )}
                       </div>
+                      <div style={{ display: "flex", justifyContent: "center", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+                        {(creator as { verified_creator?: boolean }).verified_creator && (
+                          <span
+                            title="Verified MLO Creator"
+                            style={{
+                              display: "inline-flex",
+                              padding: "1px 6px",
+                              borderRadius: 999,
+                              fontSize: 9,
+                              fontWeight: 700,
+                              background: "rgba(59, 130, 246, 0.25)",
+                              border: "1px solid rgba(59, 130, 246, 0.5)",
+                              color: "#93c5fd",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                        {(creator as { partnership?: boolean }).partnership && (
+                          <span
+                            title="Partner"
+                            style={{
+                              display: "inline-flex",
+                              padding: "1px 6px",
+                              borderRadius: 999,
+                              fontSize: 9,
+                              fontWeight: 800,
+                              background: "linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.3))",
+                              border: "1px solid rgba(251, 191, 36, 0.6)",
+                              color: "#fde68a",
+                              boxShadow: "0 0 10px rgba(251, 191, 36, 0.4)",
+                            }}
+                          >
+                            ★
+                          </span>
+                        )}
+                      </div>
                       <div style={{ textAlign: "center", fontSize: 11, opacity: 0.85, marginTop: 4 }}>
                         {t("home.spotlight.count", { count: creator.count })}
                       </div>
@@ -805,9 +920,136 @@ export default function Home() {
                 </div>
               )}
             </div>
+
+            {SHOW_PARTNERS_SECTION && (
+              <>
+                <div
+                  style={{
+                    border: "1px solid rgba(251, 191, 36, 0.6)",
+                    borderRadius: 14,
+                    padding: 12,
+                    background:
+                      "linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.06))",
+                    boxShadow: "0 10px 24px rgba(251, 191, 36, 0.15)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 800,
+                      letterSpacing: 0.4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        padding: "1px 6px",
+                        borderRadius: 999,
+                        fontSize: 14,
+                        fontWeight: 800,
+                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.3))",
+                        border: "1px solid rgba(251, 191, 36, 0.6)",
+                        color: "#fde68a",
+                        boxShadow: "0 0 10px rgba(251, 191, 36, 0.4)",
+                      }}
+                    >
+                      ★
+                    </span>
+                    {t("home.partners.label")}
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        padding: "1px 6px",
+                        borderRadius: 999,
+                        fontSize: 14,
+                        fontWeight: 800,
+                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.3))",
+                        border: "1px solid rgba(251, 191, 36, 0.6)",
+                        color: "#fde68a",
+                        boxShadow: "0 0 10px rgba(251, 191, 36, 0.4)",
+                      }}
+                    >
+                      ★
+                    </span>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    border: "1px solid rgba(251, 191, 36, 0.5)",
+                    borderRadius: 14,
+                    padding: 12,
+                    background: "#10162b",
+                  }}
+                >
+                  {displayedPartners.length > 0 ? (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {displayedPartners.map((creator) => (
+                        <a
+                          key={creator.creator_key}
+                          href="/creators"
+                          style={{
+                            display: "block",
+                            position: "relative",
+                            border: "1px solid rgba(251, 191, 36, 0.4)",
+                            borderRadius: 12,
+                            overflow: "hidden",
+                            minHeight: 80,
+                            backgroundColor: "#0f1528",
+                            textDecoration: "none",
+                            color: "inherit",
+                            padding: 12,
+                            boxSizing: "border-box",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              minHeight: 56,
+                            }}
+                          >
+                            {creator.logo_url ? (
+                              <img
+                                src={creator.logo_url}
+                                alt=""
+                                loading="lazy"
+                                style={{
+                                  maxWidth: `${creator.spotlight_logo_size}%`,
+                                  maxHeight: 48,
+                                  width: "auto",
+                                  height: "auto",
+                                  objectFit: "contain",
+                                  flexShrink: 0,
+                                }}
+                              />
+                            ) : (
+                              <span style={{ fontWeight: 700, fontSize: 14 }}>{creator.displayName}</span>
+                            )}
+                          </div>
+                          <div style={{ textAlign: "center", fontSize: 11, opacity: 0.85, marginTop: 4 }}>
+                            {t("home.partners.count", { count: creator.count })}
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ opacity: 0.7, fontSize: 13 }}>
+                      {t("home.partners.empty")}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
+
       <style>{`
         @keyframes mloConveyorScroll {
           0% { transform: translateX(0); }
@@ -910,6 +1152,7 @@ export default function Home() {
         </section>
       )}
 
+      {SHOW_REVIEWS_SECTION && (
       <section className="home-section-wrap" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 48px" }}>
         <div
           style={{
@@ -1034,6 +1277,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       </div>
     </main>

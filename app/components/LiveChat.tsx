@@ -150,9 +150,11 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
   const chatStyles = {
     panel: {
       position: "fixed" as const,
-      bottom: 80,
-      right: 20,
-      width: "min(380px, calc(100vw - 40px))",
+      bottom: "calc(56px + max(20px, env(safe-area-inset-bottom, 20px)))",
+      right: "max(12px, env(safe-area-inset-right, 12px))",
+      left: "max(12px, env(safe-area-inset-left, 12px))",
+      width: "min(380px, calc(100vw - 24px))",
+      marginLeft: "auto",
       maxHeight: "min(480px, 70vh)",
       background: "#10162b",
       border: "1px solid #243046",

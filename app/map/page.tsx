@@ -3,9 +3,11 @@
  import dynamic from "next/dynamic";
 import { Suspense, useEffect, useMemo, useState } from "react";
  import { useSearchParams } from "next/navigation";
- import PublicFilterSidebar from "../components/PublicFilterSidebar";
- import Sidebar from "../components/Sidebar";
+import PublicFilterSidebar from "../components/PublicFilterSidebar";
+import Sidebar from "../components/Sidebar";
+import MapWelcomePopup from "../components/MapWelcomePopup";
  import { CategoryKey } from "../lib/categories";
+import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
  
@@ -23,23 +25,76 @@ function MapPageContent() {
    const [searchPoint, setSearchPoint] =
      useState<{ x: number; y: number } | null>(null);
  
-   const [selectedMloId, setSelectedMloId] = useState<string | null>(null);
-   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedMloId, setSelectedMloId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [highlightFromFresh, setHighlightFromFresh] = useState(false);
   const [focusMlo, setFocusMlo] = useState<{ id: string; x: number; y: number } | null>(null);
- 
+  const [creatorTiles, setCreatorTiles] = useState<{ creator_key: string; partnership?: boolean }[]>([]);
+
   useEffect(() => {
-    fetch("/api/mlo", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => {
-        setMlos(d.mlos || []);
-        const ids = (d.mlos || []).map((mlo: any) => mlo.id).filter(Boolean);
-        if (ids.length === 0) return;
-        fetch(`/api/mlo/views?ids=${encodeURIComponent(ids.join(","))}`)
-          .then((res) => res.json())
-          .then((json) => setViewCounts(json.views || {}))
-          .catch(() => null);
-      });
+    let delayTimer: ReturnType<typeof setTimeout> | null = null;
+    function fetchViewCounts(ids: string[]) {
+      if (ids.length === 0) return;
+      fetch(`/api/mlo/views?ids=${encodeURIComponent(ids.join(","))}`)
+        .then((res) => res.json())
+        .then((json) => setViewCounts(json.views || {}))
+        .catch(() => null);
+    }
+    function fetchMlos() {
+      if (delayTimer) {
+        clearTimeout(delayTimer);
+        delayTimer = null;
+      }
+      fetch("/api/mlo", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          setMlos(d.mlos || []);
+          const ids = (d.mlos || []).map((mlo: any) => mlo.id).filter(Boolean);
+          fetchViewCounts(ids);
+          delayTimer = setTimeout(() => fetchViewCounts(ids), 800);
+        });
+    }
+    fetchMlos();
+    const interval = setInterval(fetchMlos, 60_000);
+
+    function fetchCreatorTiles() {
+      fetch("/api/creator-tiles", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => setCreatorTiles(d.tiles || []))
+        .catch(() => null);
+    }
+    fetchCreatorTiles();
+    const tilesInterval = setInterval(fetchCreatorTiles, 60_000);
+
+    // Refresh view counts when returning from MLO detail page (e.g. after clicking Back)
+    const refresh = () => {
+      fetch("/api/mlo", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          const ids = (d.mlos || []).map((mlo: any) => mlo.id).filter(Boolean);
+          if (ids.length === 0) return;
+          fetch(`/api/mlo/views?ids=${encodeURIComponent(ids.join(","))}`)
+            .then((res) => res.json())
+            .then((json) => setViewCounts(json.views || {}))
+            .catch(() => null);
+        });
+    };
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) refresh();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    window.addEventListener("pageshow", onShow);
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(tilesInterval);
+      if (delayTimer) clearTimeout(delayTimer);
+      window.removeEventListener("pageshow", onShow);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
  
    useEffect(() => {
@@ -104,18 +159,29 @@ function MapPageContent() {
   }, [mlos]);
 
   const creatorOptions = useMemo(() => {
-    const byKey: Record<string, { label: string; count: number }> = {};
+    const tilesByKey: Record<string, { partnership?: boolean }> = {};
+    for (const t of creatorTiles) {
+      const k = String(t.creator_key || "").trim().toLowerCase();
+      if (k) tilesByKey[k] = { partnership: (t as { partnership?: boolean }).partnership === true };
+    }
+    const byKey: Record<string, { label: string; count: number; partnership?: boolean }> = {};
     for (const mlo of mlos) {
       const raw = (mlo.creator || "").trim();
       if (!raw) continue;
       const key = raw.toLowerCase();
-      if (!byKey[key]) byKey[key] = { label: raw, count: 0 };
+      if (!byKey[key]) byKey[key] = { label: raw, count: 0, partnership: tilesByKey[key]?.partnership };
       byKey[key].count += 1;
     }
     return Object.entries(byKey)
-      .sort((a, b) => a[1].label.localeCompare(b[1].label))
-      .map(([key, { label, count }]) => ({ key, label, count }));
-  }, [mlos]);
+      .sort((a, b) => {
+        const aPartner = a[1].partnership ?? false;
+        const bPartner = b[1].partnership ?? false;
+        if (aPartner && !bPartner) return -1;
+        if (!aPartner && bPartner) return 1;
+        return a[1].label.localeCompare(b[1].label);
+      })
+      .map(([key, { label, count, partnership }]) => ({ key, label, count, partnership }));
+  }, [mlos, creatorTiles]);
  
   // Radius in GTA world units; markers within this distance of the clicked one also show in the sidebar
   const MLO_CLICK_RADIUS_GTA = 35;
@@ -140,7 +206,23 @@ function MapPageContent() {
       })
     : [];
 
+  // Build returnTo from current state so Back from MLO detail restores map position & sidebar
+  const mapReturnTo = useMemo(() => {
+    if (selectedMloId && selectedMlo && Number.isFinite(selectedMlo.x) && Number.isFinite(selectedMlo.y)) {
+      const params = new URLSearchParams();
+      params.set("mloId", selectedMloId);
+      params.set("highlight", "1");
+      params.set("x", String(selectedMlo.x));
+      params.set("y", String(selectedMlo.y));
+      return `/map?${params.toString()}`;
+    }
+    const q = searchParams.toString();
+    return `/map${q ? `?${q}` : ""}`;
+  }, [selectedMloId, selectedMlo, searchParams]);
+
   return (
+     <>
+     <MapWelcomePopup />
      <main
        className="home-root map-page"
        style={{
@@ -187,9 +269,7 @@ function MapPageContent() {
             </div>
           </div>
           <div className="header-actions">
-            <span className="header-pill">
-              Discord
-            </span>
+            <DiscordLink />
             <LanguageSelect />
           </div>
         </div>
@@ -205,9 +285,6 @@ function MapPageContent() {
           </a>
           <a href="/creators" className="header-link">
             {t("nav.creators")}
-          </a>
-          <a href="/requests" className="header-link">
-            {t("nav.requests")}
           </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}
@@ -238,11 +315,12 @@ function MapPageContent() {
          />
  
           <Map
+           key={highlightFromFresh && selectedMloId ? `focus-${selectedMloId}` : "all"}
            mlos={filteredMlos}
            searchPoint={searchPoint}
           onMloClick={(id) => {
             setHighlightFromFresh(false);
-              setFocusMlo(null);
+            setFocusMlo(null);
             setSelectedMloId(id);
             setIsSidebarOpen(true);
           }}
@@ -252,15 +330,22 @@ function MapPageContent() {
  
         <Sidebar
           isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
+          onClose={() => {
+            setIsSidebarOpen(false);
+            setHighlightFromFresh(false);
+            setSelectedMloId(null);
+            setFocusMlo(null);
+          }}
           mlos={sidebarMlos}
           onRefresh={() => {}}
           selectedId={selectedMloId}
           viewCounts={viewCounts}
+          returnTo={mapReturnTo}
         />
        </div>
       </div>
      </main>
+     </>
    );
 }
 

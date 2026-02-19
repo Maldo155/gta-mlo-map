@@ -20,9 +20,24 @@ create table if not exists public.creator_tiles (
   tile_text_position text default 'left center',
   logo_url text,
   spotlight_logo_size numeric,
+  verified_creator boolean default false,
+  partnership boolean default false,
+  sort_order int,
   updated_at timestamptz not null default now()
 );
 
+-- If table already exists, add sort_order:
+-- alter table public.creator_tiles add column if not exists sort_order int;
+
+-- If table already exists, add badge columns:
+-- alter table public.creator_tiles add column if not exists verified_creator boolean default false;
+-- alter table public.creator_tiles add column if not exists partnership boolean default false;
+
+-- Discord & description (optional, for Discord forum auto-posting):
+-- alter table public.creator_tiles add column if not exists creator_discord_invite text;
+-- alter table public.creator_tiles add column if not exists creator_description text;
+-- Or run: supabase/creator-tiles-discord-fields.sql
+--
 -- If table already exists, add spotlight columns (required for Creator Spotlight logos).
 -- Run in Supabase SQL editor for the project your **production** site uses (Vercel env vars):
 --   alter table public.creator_tiles add column if not exists logo_url text;

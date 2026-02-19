@@ -27,7 +27,7 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
 
   const [tilesRes, mlosRes] = await Promise.all([
-    supabase.from(TILES_TABLE).select("creator_key, logo_url, banner_url, spotlight_logo_size").order("creator_key", { ascending: true }),
+    supabase.from(TILES_TABLE).select("creator_key, logo_url, banner_url, spotlight_logo_size, verified_creator, partnership").order("creator_key", { ascending: true }),
     supabase.from(MLOS_TABLE).select("creator"),
   ]);
 
@@ -57,7 +57,7 @@ export async function GET() {
   );
 
   const creators = inSpotlight.map(
-    (t: { creator_key: string; logo_url?: string | null; spotlight_logo_size?: number | null }) => {
+    (t: { creator_key: string; logo_url?: string | null; spotlight_logo_size?: number | null; verified_creator?: boolean; partnership?: boolean }) => {
       const key = normalizeCreatorKey(t.creator_key);
       const size =
         t.spotlight_logo_size != null && Number.isFinite(Number(t.spotlight_logo_size))
@@ -67,6 +67,8 @@ export async function GET() {
         creator_key: t.creator_key,
         logo_url: t.logo_url || null,
         spotlight_logo_size: size,
+        verified_creator: t.verified_creator === true,
+        partnership: t.partnership === true,
         displayName: displayNameByKey[key] || t.creator_key,
         count: countByKey[key] || 0,
       };

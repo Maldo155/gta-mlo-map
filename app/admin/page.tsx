@@ -7,10 +7,13 @@ import type { Session } from "@supabase/supabase-js";
 import MloFormMulti from "../components/MloFormMulti";
 import CoordinateSearch from "../components/CoordinateSearch";
 import EmojiPickerDropdown from "../components/EmojiPickerDropdown";
-import { CATEGORIES } from "../lib/categories";
+import CategorySelect from "../components/CategorySelect";
+import { CATEGORIES, type CategoryKey } from "../lib/categories";
 import { BANNER_FONTS } from "../lib/bannerFonts";
 import Sidebar from "../components/Sidebar";
 import AdminLogin from "../components/AdminLogin";
+import DiscordLink from "../components/DiscordLink";
+import AdminCreatorTilesGrid from "../components/AdminCreatorTilesGrid";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
@@ -442,6 +445,461 @@ const TILE_TEXTURES: { id: string; name: string; draw: TextureDraw }[] = [
       }
     },
   },
+  {
+    id: "crosshatch",
+    name: "Crosshatch",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#08090c";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 1;
+      for (let i = -h; i <= w + h; i += 14) {
+        ctx.beginPath();
+        ctx.moveTo(i, -5);
+        ctx.lineTo(i + h, h + 5);
+        ctx.stroke();
+      }
+      for (let i = -w; i <= h + w; i += 14) {
+        ctx.beginPath();
+        ctx.moveTo(-5, i);
+        ctx.lineTo(w + 5, i + w);
+        ctx.stroke();
+      }
+    },
+  },
+  {
+    id: "bricks",
+    name: "Bricks",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#0a0b0f";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      ctx.lineWidth = 1;
+      const bw = 80;
+      const bh = 14;
+      for (let row = 0; row < Math.ceil(h / bh) + 1; row++) {
+        for (let col = 0; col < Math.ceil(w / bw) + 1; col++) {
+          const x = col * bw + (row % 2) * (bw / 2);
+          ctx.strokeRect(x, row * bh, bw, bh);
+        }
+      }
+    },
+  },
+  {
+    id: "noise_grid",
+    name: "Noise grid",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#0a0a0d";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      const step = 12;
+      for (let x = 0; x < w; x += step) {
+        for (let y = 0; y < h; y += step) {
+          if ((x + y) % (step * 2) === 0) ctx.fillRect(x, y, step / 2, step / 2);
+          else if ((x * 3 + y) % (step * 3) === 0) ctx.fillRect(x + step / 4, y, step / 3, step / 3);
+        }
+      }
+    },
+  },
+  {
+    id: "chevron",
+    name: "Chevron",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#090a0e";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.1)";
+      const seg = 24;
+      for (let row = -1; row < h / seg + 2; row++) {
+        for (let col = -1; col < w / seg + 2; col++) {
+          const x = col * seg + (row % 2) * (seg / 2);
+          ctx.beginPath();
+          ctx.moveTo(x, row * seg);
+          ctx.lineTo(x + seg / 2, row * seg + seg / 2);
+          ctx.lineTo(x + seg, row * seg);
+          ctx.lineTo(x + seg / 2, row * seg - seg / 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    },
+  },
+  {
+    id: "scanlines",
+    name: "Scanlines",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#0c0d10";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.03)";
+      for (let y = 0; y < h; y += 3) {
+        ctx.fillRect(0, y, w, 1);
+      }
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "rgba(255,255,255,0.06)");
+      g.addColorStop(0.5, "transparent");
+      g.addColorStop(1, "rgba(255,255,255,0.04)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    },
+  },
+  {
+    id: "concentric",
+    name: "Concentric circles",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#050608";
+      ctx.fillRect(0, 0, w, h);
+      const cx = w / 2;
+      const cy = h / 2;
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 1;
+      for (let r = 8; r < Math.max(w, h); r += 16) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    },
+  },
+  {
+    id: "honeycomb",
+    name: "Honeycomb fill",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#070809";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.09)";
+      const r = 10;
+      const dx = r * 1.732;
+      for (let row = 0; row < 8; row++) {
+        for (let col = -1; col < w / (dx / 2) + 2; col++) {
+          const cx = col * (dx / 2) + (row % 2) * (dx / 4);
+          const cy = row * r * 1.5;
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+            const x = cx + r * 0.8 * Math.cos(a);
+            const y = cy + r * 0.8 * Math.sin(a);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    },
+  },
+  {
+    id: "stripe_diag",
+    name: "Diagonal stripes",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#08090d";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.11)";
+      const step = 20;
+      for (let i = -w - h; i <= w + h; i += step * 2) {
+        ctx.beginPath();
+        ctx.moveTo(i, -5);
+        ctx.lineTo(i + step, h + 5);
+        ctx.lineTo(i + step * 2, h + 5);
+        ctx.lineTo(i + step * 3, -5);
+        ctx.closePath();
+        ctx.fill();
+      }
+    },
+  },
+  {
+    id: "subtle_mesh",
+    name: "Subtle mesh",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#0a0b0f";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.07)";
+      ctx.lineWidth = 1;
+      const step = 30;
+      for (let x = 0; x <= w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(255,255,255,0.05)";
+      for (let x = step; x < w; x += step * 2) {
+        for (let y = step; y < h; y += step * 2) {
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    },
+  },
+  {
+    id: "lightning",
+    name: "Lightning streaks",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#040507";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 12; i++) {
+        const seed = i * 97;
+        ctx.beginPath();
+        let x = (seed % w);
+        let y = 0;
+        ctx.moveTo(x, y);
+        for (let step = 0; step < 15; step++) {
+          x += ((seed + step * 7) % 17) - 8;
+          y += 4;
+          ctx.lineTo(Math.max(0, Math.min(w, x)), Math.min(h, y));
+        }
+        ctx.stroke();
+      }
+    },
+  },
+  {
+    id: "plaid",
+    name: "Plaid",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#0b0c10";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      const bw = 40;
+      const bh = 16;
+      for (let x = 0; x <= w; x += bw) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += bh) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      for (let x = bw / 2; x <= w; x += bw) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = bh / 2; y <= h; y += bh) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+    },
+  },
+  {
+    id: "wave_grid",
+    name: "Wave grid",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#08090c";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 8; i++) {
+        const baseY = (i / 8) * h * 1.2 - 2;
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += 8) {
+          const y = baseY + Math.sin((x / w) * Math.PI * 6) * 5;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      for (let x = 0; x <= w; x += 25) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        for (let y = 0; y <= h; y += 6) {
+          ctx.lineTo(x + Math.sin((y / h) * Math.PI * 4) * 4, y);
+        }
+        ctx.stroke();
+      }
+    },
+  },
+  {
+    id: "scatter",
+    name: "Scatter dots",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#07080a";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      const coords: [number, number][] = [];
+      for (let i = 0; i < 120; i++) {
+        coords.push([(i * 73) % w, (i * 127) % h]);
+      }
+      coords.sort((a, b) => a[0] - b[0]);
+      for (const [x, y] of coords) {
+        const r = 0.8 + (x + y) % 3 * 0.5;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+  },
+  {
+    id: "shimmer",
+    name: "Shimmer",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#060709";
+      ctx.fillRect(0, 0, w, h);
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, "rgba(255,255,255,0)");
+      g.addColorStop(0.2, "rgba(255,255,255,0.08)");
+      g.addColorStop(0.4, "rgba(255,255,255,0)");
+      g.addColorStop(0.5, "rgba(255,255,255,0.12)");
+      g.addColorStop(0.6, "rgba(255,255,255,0)");
+      g.addColorStop(0.8, "rgba(255,255,255,0.06)");
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    },
+  },
+  {
+    id: "squares_fade",
+    name: "Fading squares",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#050608";
+      ctx.fillRect(0, 0, w, h);
+      const size = 28;
+      for (let x = 0; x < w; x += size) {
+        for (let y = 0; y < h; y += size) {
+          const d = Math.sqrt((x - w / 2) ** 2 + (y - h / 2) ** 2);
+          const alpha = Math.max(0, 0.15 - (d / Math.max(w, h)) * 0.12);
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+        }
+      }
+    },
+  },
+  {
+    id: "triangle",
+    name: "Triangles",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#08090d";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.1)";
+      const s = 22;
+      for (let row = -1; row < h / (s * 0.866) + 2; row++) {
+        for (let col = -1; col < w / s + 2; col++) {
+          const x = col * s + (row % 2) * (s / 2);
+          const y = row * s * 0.866;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + s / 2, y + s * 0.866);
+          ctx.lineTo(x + s, y);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    },
+  },
+  {
+    id: "gradient_blend",
+    name: "Blended gradient",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#0a0b0f";
+      ctx.fillRect(0, 0, w, h);
+      const g1 = ctx.createLinearGradient(0, 0, w, 0);
+      g1.addColorStop(0, "rgba(255,255,255,0)");
+      g1.addColorStop(0.3, "rgba(255,255,255,0.1)");
+      g1.addColorStop(0.7, "rgba(255,255,255,0.08)");
+      g1.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, w, h);
+      const g2 = ctx.createLinearGradient(0, 0, 0, h);
+      g2.addColorStop(0, "rgba(255,255,255,0.05)");
+      g2.addColorStop(0.5, "transparent");
+      g2.addColorStop(1, "rgba(255,255,255,0.06)");
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, w, h);
+    },
+  },
+  {
+    id: "sparkle",
+    name: "Sparkle",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#060708";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      for (let i = 0; i < 35; i++) {
+        const x = (i * 157) % w;
+        const y = (i * 89) % h;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 2);
+        ctx.lineTo(x + 2, y);
+        ctx.lineTo(x, y + 2);
+        ctx.lineTo(x - 2, y);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      for (let i = 0; i < 50; i++) {
+        const x = (i * 97) % w;
+        const y = (i * 131) % h;
+        ctx.beginPath();
+        ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+  },
+  {
+    id: "zigzag",
+    name: "Zigzag",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#07080b";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 2;
+      const amp = 8;
+      const freq = 16;
+      for (let row = 0; row < 6; row++) {
+        const baseY = (row / 6) * h;
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= w; x += freq) {
+          const y = baseY + (Math.floor(x / freq) % 2 ? amp : -amp);
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    },
+  },
+  {
+    id: "panel_lines",
+    name: "Panel lines",
+    draw: (ctx, w, h) => {
+      ctx.fillStyle = "#08090c";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(255,255,255,0.11)";
+      ctx.lineWidth = 1;
+      const pw = w / 5;
+      for (let i = 1; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * pw, 0);
+        ctx.lineTo(i * pw, h);
+        ctx.stroke();
+      }
+      for (let i = 1; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * (h / 4));
+        ctx.lineTo(w, i * (h / 4));
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(255,255,255,0.04)";
+      for (let col = 0; col < 5; col++) {
+        for (let row = 0; row < 4; row++) {
+          ctx.fillRect(col * pw + 2, row * (h / 4) + 2, pw - 4, h / 4 - 4);
+        }
+      }
+    },
+  },
 ];
 
 export default function AdminPage() {
@@ -476,8 +934,14 @@ export default function AdminPage() {
   const [tileFitMode, setTileFitMode] = useState<"cover" | "contain">("cover");
   const [tileButtonLabel, setTileButtonLabel] = useState("");
   const [tileButtonUrl, setTileButtonUrl] = useState("");
+  const [tileDiscordInvite, setTileDiscordInvite] = useState("");
+  const [tileDescription, setTileDescription] = useState("");
+  const [tileWebsiteUrl, setTileWebsiteUrl] = useState("");
+  const [tileDiscordSaving, setTileDiscordSaving] = useState(false);
   const [tileBorderGlow, setTileBorderGlow] = useState(false);
   const [tileBorderGlowColor, setTileBorderGlowColor] = useState("#c7ff4a");
+  const [tileVerifiedCreator, setTileVerifiedCreator] = useState(false);
+  const [tilePartnership, setTilePartnership] = useState(false);
   const [tileZoom, setTileZoom] = useState(100);
   const [tilePosition, setTilePosition] = useState("left center");
   const [tilePosX, setTilePosX] = useState(50);
@@ -495,6 +959,7 @@ export default function AdminPage() {
   const [tileSaving, setTileSaving] = useState(false);
   const [tileDeleting, setTileDeleting] = useState(false);
   const [showCreatorTiles, setShowCreatorTiles] = useState(false);
+  const [showReorderTiles, setShowReorderTiles] = useState(true);
   const [showEditMlos, setShowEditMlos] = useState(false);
   const [showStatusBanner, setShowStatusBanner] = useState(false);
   const [bannerTitle, setBannerTitle] = useState("");
@@ -528,6 +993,8 @@ export default function AdminPage() {
   const [spotlightSaving, setSpotlightSaving] = useState<string | null>(null);
   const [spotlightUploading, setSpotlightUploading] = useState<string | null>(null);
   const [spotlightLogoUrlOverride, setSpotlightLogoUrlOverride] = useState<Record<string, string>>({});
+  const [spotlightVerifiedCreator, setSpotlightVerifiedCreator] = useState<Record<string, boolean>>({});
+  const [spotlightPartnership, setSpotlightPartnership] = useState<Record<string, boolean>>({});
 
   const [showLiveChats, setShowLiveChats] = useState(false);
   const [chatThreads, setChatThreads] = useState<Array<{ id: string; name: string; email: string; created_at: string }>>([]);
@@ -689,8 +1156,12 @@ export default function AdminPage() {
       setTileFitMode("cover");
       setTileButtonLabel("");
       setTileButtonUrl("");
+      setTileDiscordInvite("");
+      setTileDescription("");
       setTileBorderGlow(false);
       setTileBorderGlowColor("#c7ff4a");
+      setTileVerifiedCreator(false);
+      setTilePartnership(false);
       setTileZoom(100);
       setTilePosition("left center");
       setTilePosX(50);
@@ -707,6 +1178,9 @@ export default function AdminPage() {
       setTileFitMode("cover");
       setTileButtonLabel(existing.button_label || "");
       setTileButtonUrl(existing.button_url || "");
+      setTileDiscordInvite((existing as { creator_discord_invite?: string }).creator_discord_invite || "");
+      setTileDescription((existing as { creator_description?: string }).creator_description || "");
+      setTileWebsiteUrl((existing as { creator_website_url?: string }).creator_website_url || existing.button_url || "");
       setTileBorderGlow(Boolean(existing.tile_border_glow));
       setTileBorderGlowColor(
         existing.tile_border_glow_color && /^#[0-9A-Fa-f]{3,8}$/.test(String(existing.tile_border_glow_color))
@@ -725,6 +1199,8 @@ export default function AdminPage() {
       setTilePosX(Math.min(Math.max(nextX, 0), 100));
       setTilePosY(Math.min(Math.max(nextY, 0), 100));
       setTilePosition(`${nextX}% ${nextY}%`);
+      setTileVerifiedCreator(Boolean((existing as { verified_creator?: boolean }).verified_creator));
+      setTilePartnership(Boolean((existing as { partnership?: boolean }).partnership));
       setTileStatus("Loaded existing tile settings.");
     } else {
       setTileBannerUrl("");
@@ -732,12 +1208,17 @@ export default function AdminPage() {
       setTileFitMode("cover");
       setTileButtonLabel("");
       setTileButtonUrl("");
+      setTileDiscordInvite("");
+      setTileDescription("");
       setTileBorderGlow(false);
       setTileBorderGlowColor("#c7ff4a");
+      setTileVerifiedCreator(false);
+      setTilePartnership(false);
       setTileZoom(100);
       setTilePosition("left center");
       setTilePosX(50);
       setTilePosY(50);
+      setTileWebsiteUrl("");
       setTileStatus("No tile found for this creator.");
     }
   }, [tileCreatorKey, creatorTiles]);
@@ -1032,9 +1513,7 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="header-actions">
-            <span className="header-pill">
-              Discord
-            </span>
+            <DiscordLink />
             <LanguageSelect />
             
           </div>
@@ -1052,9 +1531,6 @@ export default function AdminPage() {
           <a href="/creators" className="header-link">
             {t("nav.creators")}
           </a>
-          <a href="/requests" className="header-link">
-            {t("nav.requests")}
-          </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}
           </a>
@@ -1062,6 +1538,9 @@ export default function AdminPage() {
       </header>
       <div style={{ padding: 20 }}>
         <h1>{t("admin.title")}</h1>
+        <p style={{ marginTop: 8, marginBottom: 16, fontSize: 14, opacity: 0.9, maxWidth: 600 }}>
+          Manage your map: add or edit MLOs, creator tiles, the homepage banner, and more. Use the collapsible sections below — each controls a different part of the site.
+        </p>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
         <button
@@ -1104,6 +1583,7 @@ export default function AdminPage() {
 
       <button
         onClick={logout}
+        title="Sign out of admin"
         style={{
           marginBottom: 12,
           padding: "6px 10px",
@@ -1119,6 +1599,7 @@ export default function AdminPage() {
       </button>
       <button
         onClick={deleteAllMlos}
+        title="Permanently removes every MLO from the map. Use with caution."
         style={{
           marginBottom: 12,
           marginLeft: 8,
@@ -1161,6 +1642,9 @@ export default function AdminPage() {
 
         {showControls && (
           <>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+              Add new MLOs to the map. Search coordinates, click the map to pick a spot, fill in details, then submit.
+            </div>
             <div style={{ marginBottom: 8 }}>
               {coords
                 ? t("admin.coords.display", {
@@ -1206,6 +1690,10 @@ export default function AdminPage() {
           </button>
         </div>
         {showStatusBanner && (
+          <>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            Customize the text and styling of the homepage banner (above the map).
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.titleLabel")}</div>
@@ -1413,6 +1901,7 @@ export default function AdminPage() {
               {bannerSaving ? "..." : t("admin.saveBanner")}
             </button>
           </div>
+          </>
         )}
       </div>
 
@@ -1438,6 +1927,11 @@ export default function AdminPage() {
             {showLiveChats ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
           </button>
         </div>
+        {showLiveChats && (
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            View and reply to visitor messages from the live chat widget. Replies sync to Discord.
+          </div>
+        )}
         {showLiveChats && (
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
             <div style={{ minWidth: 200, maxWidth: 320 }}>
@@ -1567,6 +2061,11 @@ export default function AdminPage() {
           </button>
         </div>
         {showEditMlos && (
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            Edit or delete existing MLOs on the map. Search by name, creator, or category.
+          </div>
+        )}
+        {showEditMlos && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input
               placeholder={t("admin.searchMlos")}
@@ -1683,19 +2182,14 @@ export default function AdminPage() {
                           }
                           style={{ padding: "6px 8px", fontSize: 12 }}
                         />
-                        <select
-                          value={editMloForm.category}
-                          onChange={(e) =>
-                            setEditMloForm((f) => f ? { ...f, category: e.target.value } : f)
+                        <CategorySelect
+                          value={editMloForm.category as CategoryKey}
+                          onChange={(v) =>
+                            setEditMloForm((f) => f ? { ...f, category: v } : f)
                           }
-                          style={{ padding: "6px 8px", fontSize: 12 }}
-                        >
-                          {CATEGORIES.map((c) => (
-                            <option key={c.key} value={c.key}>
-                              {c.icon} {c.label}
-                            </option>
-                          ))}
-                        </select>
+                          useTranslation={false}
+                          style={{ padding: 0 }}
+                        />
                         <input
                           placeholder="Tag"
                           value={editMloForm.tag}
@@ -1915,525 +2409,83 @@ export default function AdminPage() {
             {showCreatorTiles ? "Hide ▲" : "Show ▼"}
           </button>
         </div>
-        {showCreatorTiles && <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select
-              value={tileCreatorKey}
-              onChange={(e) => setTileCreatorKey(e.target.value)}
-              style={{ minWidth: 260 }}
-            >
-              <option value="">Select creator key</option>
-              {Array.from(
-                new Set(
-                  mlos
-                    .map((m) => String(m.creator || "").trim())
-                    .filter(Boolean)
-                )
-              )
-                .sort((a, b) => a.localeCompare(b))
-                .map((creator) => {
-                  const key = creator.toLowerCase();
-                  return (
-                    <option key={key} value={key}>
-                      {creator}
-                    </option>
-                  );
-                })}
-            </select>
-            <select value="cover" onChange={() => null} disabled>
-              <option value="cover">cover (crop)</option>
-            </select>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input
-              placeholder="Button label (optional)"
-              value={tileButtonLabel}
-              onChange={(e) => setTileButtonLabel(e.target.value)}
-              style={{ minWidth: 260 }}
-            />
-            <input
-              placeholder="Button URL (optional)"
-              value={tileButtonUrl}
-              onChange={(e) => setTileButtonUrl(e.target.value)}
-              style={{ minWidth: 320 }}
-            />
-          </div>
-          <div style={{ fontSize: 12, opacity: 0.8, marginTop: -4, marginBottom: 4 }}>
-            Button label + URL appear on this creator’s tile on the <a href="/creators" target="_blank" rel="noreferrer" style={{ color: "#93c5fd" }}>/creators</a> page (e.g. “Visit Store” → store link). Both must be set for the button to show. Click “Save tile” below to save.
-          </div>
-
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={tileBorderGlow}
-                onChange={(e) => setTileBorderGlow(e.target.checked)}
-              />
-              <span>Tile border glow (outline the card, not the image)</span>
-            </label>
-            {tileBorderGlow && (
-              <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 12, opacity: 0.9 }}>Glow color:</span>
-                <input
-                  type="color"
-                  value={tileBorderGlowColor}
-                  onChange={(e) => setTileBorderGlowColor(e.target.value)}
-                  style={{ width: 32, height: 28, padding: 0, border: "1px solid #333", borderRadius: 4, cursor: "pointer" }}
-                />
-                <input
-                  type="text"
-                  value={tileBorderGlowColor}
-                  onChange={(e) => setTileBorderGlowColor(e.target.value)}
-                  style={{ width: 90, fontSize: 12 }}
-                  placeholder="#c7ff4a"
-                />
-              </label>
-            )}
-          </div>
-
-          <div
-            style={{
-              marginTop: 16,
-              padding: 12,
-              border: "1px solid #1f2937",
-              borderRadius: 10,
-              backgroundColor: "#0b0b0b",
-            }}
-          >
-            <div style={{ fontWeight: 600, marginBottom: 10 }}>
-              Design tile (1000×52) — texture + logo → set as banner
-            </div>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
-              <div>
-                <label style={{ fontSize: 12, opacity: 0.9 }}>Background texture</label>
-                <select
-                  value={designTextureId}
-                  onChange={(e) => setDesignTextureId(e.target.value)}
-                  style={{ display: "block", marginTop: 4, minWidth: 140 }}
-                >
-                  {TILE_TEXTURES.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, opacity: 0.9 }}>Texture color (tint)</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                  <input
-                    type="color"
-                    value={toSixDigitHex(designTextureColor) || "#888888"}
-                    onChange={(e) => setDesignTextureColor(e.target.value)}
-                    onInput={(e) => setDesignTextureColor((e.target as HTMLInputElement).value)}
-                    style={{ width: 28, height: 28, padding: 0, border: "1px solid #333", borderRadius: 4, cursor: "pointer" }}
-                  />
-                  <input
-                    type="text"
-                    value={designTextureColor}
-                    onChange={(e) => {
-                      const raw = e.target.value.trim();
-                      if (!raw) {
-                        setDesignTextureColor("");
-                        return;
-                      }
-                      const normalized = toSixDigitHex(raw);
-                      setDesignTextureColor(normalized || raw);
-                    }}
-                    placeholder="#888888"
-                    style={{ width: 82, fontSize: 12 }}
-                  />
-                  {designTextureColor && (
-                    <button
-                      type="button"
-                      onClick={() => setDesignTextureColor("")}
-                      style={{ fontSize: 11, padding: "2px 6px" }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, opacity: 0.9 }}>Logo (image)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setDesignLogoFile(e.target.files?.[0] ?? null)}
-                  style={{ display: "block", marginTop: 4, fontSize: 12 }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, opacity: 0.9 }}>Logo position</label>
-                <select
-                  value={designLogoPosition}
-                  onChange={(e) =>
-                    setDesignLogoPosition(e.target.value as "left" | "center" | "right")
-                  }
-                  style={{ display: "block", marginTop: 4, minWidth: 100 }}
-                >
-                  <option value="left">Left</option>
-                  <option value="center">Center</option>
-                  <option value="right">Right</option>
-                </select>
-              </div>
-              {designLogoFile && (
-                <div>
-                  <label style={{ fontSize: 12, opacity: 0.9 }}>
-                    Logo size (height): {designLogoSize}px
-                  </label>
-                  <input
-                    type="range"
-                    min={8}
-                    max={52}
-                    value={designLogoSize}
-                    onChange={(e) => setDesignLogoSize(Number(e.target.value))}
-                    style={{ display: "block", marginTop: 4, width: 120 }}
-                  />
-                </div>
-              )}
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <canvas
-                ref={tileDesignCanvasRef}
-                width={TILE_DESIGN_W}
-                height={TILE_DESIGN_H}
-                style={{
-                  display: "block",
-                  maxWidth: "100%",
-                  width: 400,
-                  height: (400 / TILE_DESIGN_W) * TILE_DESIGN_H,
-                  border: "1px solid #333",
-                  borderRadius: 8,
-                  background: "#0f1115",
-                }}
-              />
-            </div>
-            <button
-              type="button"
-              disabled={
-                !accessToken ||
-                !tileCreatorKey.trim() ||
-                designGenerating
-              }
-              onClick={async () => {
-                const canvas = tileDesignCanvasRef.current;
-                if (!canvas || !accessToken || !tileCreatorKey.trim()) return;
-                setDesignGenerating(true);
-                setTileStatus("Generating and uploading...");
-                try {
-                  drawTileDesignCanvas(canvas, {
-                    textureId: designTextureId,
-                    textureColor: designTextureColor,
-                    logoImage: designLogoImage,
-                    logoPosition: designLogoPosition,
-                    logoSize: designLogoSize,
-                  });
-                  const blob = await new Promise<Blob | null>((resolve) => {
-                    canvas.toBlob((b) => resolve(b), "image/png", 1);
-                  });
-                  if (!blob) {
-                    setTileStatus("Failed to generate image.");
-                    return;
-                  }
-                  const form = new FormData();
-                  form.set("file", blob, "tile.png");
-                  form.set("fit_mode", "cover");
-                  form.set("creator_key", tileCreatorKey);
-                  const res = await fetch("/api/creator-tiles/upload", {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                    body: form,
-                  });
-                  const json = await res.json();
-                  if (!res.ok) {
-                    setTileStatus(json.error || "Upload failed.");
-                    return;
-                  }
-                  setTileBannerUrl(json.publicUrl || "");
-                  if (designLogoFile) {
-                    setTileStatus("Uploading logo...");
-                    const logoForm = new FormData();
-                    logoForm.set("file", designLogoFile);
-                    logoForm.set("creator_key", tileCreatorKey);
-                    const logoRes = await fetch("/api/creator-tiles/upload-logo", {
-                      method: "POST",
-                      headers: { Authorization: `Bearer ${accessToken}` },
-                      body: logoForm,
-                    });
-                    const logoJson = await logoRes.json();
-                    if (logoRes.ok && logoJson.publicUrl) {
-                      setTileLogoUrl(logoJson.publicUrl);
-                    }
-                  }
-                  setTileStatus("Tile design set as banner. Click “Save tile” to persist.");
-                } catch (err) {
-                  setTileStatus("Upload failed.");
-                } finally {
-                  setDesignGenerating(false);
-                }
-              }}
-              style={{
-                marginTop: 10,
-                padding: "8px 14px",
-                borderRadius: 6,
-                border: "1px solid #333",
-                background: "#1f2937",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {designGenerating ? "Generating…" : "Generate & set as banner"}
-            </button>
-          </div>
-
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              Zoom
-              <input
-                type="range"
-                min="80"
-                max="140"
-                value={tileZoom}
-                onChange={(e) => setTileZoom(Number(e.target.value))}
-              />
-              <span style={{ opacity: 0.7 }}>{tileZoom}%</span>
-            </label>
-            <select
-              value={tilePosition}
-              onChange={(e) => setTilePosition(e.target.value)}
-            >
-              <option value="left top">left top</option>
-              <option value="left center">left center</option>
-              <option value="left bottom">left bottom</option>
-              <option value="center top">center top</option>
-              <option value="center center">center center</option>
-              <option value="center bottom">center bottom</option>
-              <option value="right top">right top</option>
-              <option value="right center">right center</option>
-              <option value="right bottom">right bottom</option>
-            </select>
-            <span style={{ opacity: 0.7, fontSize: 12 }}>
-              Drag the preview to crop
-            </span>
-            <span style={{ opacity: 0.7, fontSize: 12 }}>
-              Tile size: 1000×52 (auto-format)
-            </span>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file || !accessToken || !tileCreatorKey.trim()) return;
-                setTileUploading(true);
-                setTileStatus("Uploading and formatting image...");
-                const form = new FormData();
-                form.set("file", file);
-                form.set("fit_mode", tileFitMode);
-                form.set("creator_key", tileCreatorKey);
-                try {
-                  const res = await fetch("/api/creator-tiles/upload", {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                    body: form,
-                  });
-                  const json = await res.json();
-                  if (!res.ok) {
-                    setTileStatus(json.error || "Upload failed.");
-                  } else {
-                    setTileBannerUrl(json.publicUrl || "");
-                    setTileStatus("Image uploaded.");
-                  }
-                } catch (err) {
-                  setTileStatus("Upload failed.");
-                } finally {
-                  setTileUploading(false);
-                }
-              }}
-            />
-            {tileUploading && <div>Uploading...</div>}
-          </div>
-
-          <div
-            style={{
-              border: "1px solid #1f2937",
-              borderRadius: 12,
-              padding: 14,
-              backgroundColor: "#0f1115",
-              backgroundImage: tileBannerUrl ? `url("${tileBannerUrl}")` : "",
-              backgroundRepeat: tileBannerUrl ? "no-repeat" : undefined,
-              backgroundPosition: tileBannerUrl ? tilePosition : undefined,
-              backgroundSize:
-                tileZoom === 100
-                  ? tileFitMode === "contain"
-                    ? "contain"
-                    : "cover"
-                  : `${tileZoom}% auto`,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                height: 52,
-                minHeight: 52,
-                borderRadius: 8,
-                border: "1px dashed rgba(255,255,255,0.35)",
-                backgroundColor: "transparent",
-                position: "relative",
-                cursor: tileBannerUrl ? "grab" : "default",
-                overflow: "visible",
-              }}
-              ref={tilePreviewRef}
-              onMouseDown={(event) => {
-                if (!tileBannerUrl) return;
-                if (tileResizing) return;
-                setTileDragging(true);
-                tileDragStart.current = {
-                  x: event.clientX,
-                  y: event.clientY,
-                };
-                tilePosStart.current = { x: tilePosX, y: tilePosY };
-              }}
-              onMouseLeave={() => {
-                if (tileDragging) {
-                  setTileDragging(false);
-                  tileDragStart.current = null;
-                  tilePosStart.current = null;
-                }
-              }}
-            >
-            </div>
-            {tileButtonLabel && tileButtonUrl && (
-              <div
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(255,200,160,0.7)",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  background:
-                    "linear-gradient(90deg, rgba(255,130,60,0.9), rgba(255,175,70,0.9))",
-                  boxShadow:
-                    "0 0 10px rgba(255,140,80,0.45), 0 0 0 1px rgba(255,200,160,0.4) inset",
-                }}
-              >
-                {tileButtonLabel}
-              </div>
-            )}
-            <span style={{ opacity: 0.7, fontSize: 12 }}>28 MLOs</span>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              onClick={async () => {
-                if (!accessToken || !tileCreatorKey.trim()) return;
-                setTileSaving(true);
-                setTileStatus("Saving...");
-                try {
-                  const res = await fetch("/api/creator-tiles", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${accessToken}`,
-                    },
-                    body: JSON.stringify({
-                      creator_key: tileCreatorKey,
-                      banner_url: tileBannerUrl || null,
-                      logo_url: tileLogoUrl || null,
-                      fit_mode: tileFitMode,
-                      zoom: tileZoom,
-                      position: tilePosition,
-                      button_label: tileButtonLabel || null,
-                      button_url: tileButtonUrl || null,
-                      tile_border_glow: tileBorderGlow,
-                      tile_border_glow_color: tileBorderGlow ? tileBorderGlowColor : null,
-                    }),
-                  });
-                  const json = await res.json();
-                  if (!res.ok) {
-                    setTileStatus(json.error || "Save failed.");
-                  } else {
-                    setTileStatus("Saved.");
-                    loadCreatorTiles();
-                  }
-                } catch (err) {
-                  setTileStatus("Save failed.");
-                } finally {
-                  setTileSaving(false);
-                }
-              }}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 6,
-                border: "1px solid #333",
-                background: "#1f2937",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {tileSaving ? "Saving..." : "Save tile"}
-            </button>
-            <button
-              onClick={async () => {
-                if (!accessToken || !tileCreatorKey.trim()) return;
-                if (!confirm("Delete this creator tile?")) return;
-                setTileDeleting(true);
-                setTileStatus("Deleting...");
-                try {
-                  const res = await fetch(
-                    `/api/creator-tiles?creator_key=${encodeURIComponent(
-                      tileCreatorKey
-                    )}`,
-                    {
-                      method: "DELETE",
-                      headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                      },
-                    }
-                  );
-                  const json = await res.json();
-                  if (!res.ok) {
-                    setTileStatus(json.error || "Delete failed.");
-                  } else {
-                    setTileStatus("Deleted.");
-                    loadCreatorTiles();
-                  }
-                } catch (err) {
-                  setTileStatus("Delete failed.");
-                } finally {
-                  setTileDeleting(false);
-                }
-              }}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 6,
-                border: "1px solid #7f1d1d",
-                background: "#7f1d1d",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {tileDeleting ? "Deleting..." : "Delete tile"}
-            </button>
-            {tileStatus && (
-              <div style={{ opacity: 0.7, alignSelf: "center" }}>
-                {tileStatus}
-              </div>
-            )}
-          </div>
-        </div>}
+        {showCreatorTiles && (
+          <AdminCreatorTilesGrid
+            creatorTiles={creatorTiles}
+            showReorderTiles={showReorderTiles}
+            setShowReorderTiles={setShowReorderTiles}
+            tileCreatorKey={tileCreatorKey}
+            setTileCreatorKey={setTileCreatorKey}
+            tileButtonLabel={tileButtonLabel}
+            setTileButtonLabel={setTileButtonLabel}
+            tileButtonUrl={tileButtonUrl}
+            setTileButtonUrl={setTileButtonUrl}
+            tileDiscordInvite={tileDiscordInvite}
+            setTileDiscordInvite={setTileDiscordInvite}
+            tileDescription={tileDescription}
+            setTileDescription={setTileDescription}
+            tileWebsiteUrl={tileWebsiteUrl}
+            setTileWebsiteUrl={setTileWebsiteUrl}
+            tileDiscordSaving={tileDiscordSaving}
+            setTileDiscordSaving={setTileDiscordSaving}
+            tileBorderGlow={tileBorderGlow}
+            setTileBorderGlow={setTileBorderGlow}
+            tileBorderGlowColor={tileBorderGlowColor}
+            setTileBorderGlowColor={setTileBorderGlowColor}
+            tileVerifiedCreator={tileVerifiedCreator}
+            setTileVerifiedCreator={setTileVerifiedCreator}
+            tilePartnership={tilePartnership}
+            setTilePartnership={setTilePartnership}
+            designTextureId={designTextureId}
+            setDesignTextureId={setDesignTextureId}
+            designTextureColor={designTextureColor}
+            setDesignTextureColor={setDesignTextureColor}
+            designLogoFile={designLogoFile}
+            setDesignLogoFile={setDesignLogoFile}
+            designLogoPosition={designLogoPosition}
+            setDesignLogoPosition={setDesignLogoPosition}
+            designLogoSize={designLogoSize}
+            setDesignLogoSize={setDesignLogoSize}
+            designGenerating={designGenerating}
+            setDesignGenerating={setDesignGenerating}
+            tileFitMode={tileFitMode}
+            setTileFitMode={setTileFitMode}
+            tileZoom={tileZoom}
+            setTileZoom={setTileZoom}
+            tilePosition={tilePosition}
+            setTilePosition={setTilePosition}
+            tilePosX={tilePosX}
+            setTilePosX={setTilePosX}
+            tilePosY={tilePosY}
+            setTilePosY={setTilePosY}
+            tileDragging={tileDragging}
+            setTileDragging={setTileDragging}
+            tileResizing={tileResizing}
+            tileBannerUrl={tileBannerUrl}
+            setTileBannerUrl={setTileBannerUrl}
+            tileLogoUrl={tileLogoUrl}
+            setTileLogoUrl={setTileLogoUrl}
+            tileUploading={tileUploading}
+            setTileUploading={setTileUploading}
+            tileSaving={tileSaving}
+            setTileSaving={setTileSaving}
+            tileDeleting={tileDeleting}
+            setTileDeleting={setTileDeleting}
+            tileStatus={tileStatus}
+            setTileStatus={setTileStatus}
+            accessToken={accessToken}
+            mlos={mlos}
+            loadCreatorTiles={loadCreatorTiles}
+            loadMlos={loadMlos}
+            drawTileDesignCanvas={drawTileDesignCanvas}
+            designLogoImage={designLogoImage}
+            TILE_TEXTURES={TILE_TEXTURES}
+            tileDesignCanvasRef={tileDesignCanvasRef}
+            tilePreviewRef={tilePreviewRef}
+            tileDragStart={tileDragStart}
+            tilePosStart={tilePosStart}
+          />
+        )}
       </div>
 
       <div
@@ -2459,6 +2511,11 @@ export default function AdminPage() {
           </button>
         </div>
         {showCreatorSpotlight && (
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            Choose which creators appear in the spotlight on the homepage. Add logos and adjust sizes.
+          </div>
+        )}
+        {showCreatorSpotlight && (
           <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 10 }}>
             These are the creators shown in the spotlight on the homepage (same order: by MLO count). Add a logo and adjust size; the card shows logo + MLO count only (no border on logo).
             <div style={{ marginTop: 6, padding: "6px 8px", background: "#0f1528", borderRadius: 6, border: "1px solid #1f2937" }}>
@@ -2476,18 +2533,22 @@ export default function AdminPage() {
             countByKey[key] = (countByKey[key] || 0) + 1;
             if (!(key in nameByKey)) nameByKey[key] = (mlo.creator || "").trim();
           }
-          const tilesByKey: Record<string, { logo_url?: string | null; spotlight_logo_size?: number | null }> = {};
+          const tilesByKey: Record<string, { logo_url?: string | null; spotlight_logo_size?: number | null; verified_creator?: boolean; partnership?: boolean }> = {};
           for (const t of creatorTiles || []) {
             if (!t.creator_key) continue;
             const k = String(t.creator_key).trim().toLowerCase();
-            tilesByKey[k] = {
+            const entry = {
               logo_url: (t as { logo_url?: string | null }).logo_url ?? null,
               spotlight_logo_size: (t as { spotlight_logo_size?: number | null }).spotlight_logo_size,
+              verified_creator: (t as { verified_creator?: boolean }).verified_creator === true,
+              partnership: (t as { partnership?: boolean }).partnership === true,
             };
+            tilesByKey[k] = entry;
+            tilesByKey[k.replace(/-/g, " ")] = entry;
           }
           const list = Object.keys(countByKey)
             .map((creator_key) => {
-              const tile = tilesByKey[creator_key];
+              const tile = tilesByKey[creator_key] || tilesByKey[creator_key.replace(/\s+/g, "-")];
               const size =
                 tile?.spotlight_logo_size != null && Number.isFinite(Number(tile.spotlight_logo_size))
                   ? Number(tile.spotlight_logo_size)
@@ -2496,6 +2557,8 @@ export default function AdminPage() {
                 creator_key,
                 logo_url: tile?.logo_url || null,
                 spotlight_logo_size: Math.min(100, Math.max(15, size)),
+                verified_creator: tile?.verified_creator ?? false,
+                partnership: tile?.partnership ?? false,
                 displayName: nameByKey[creator_key] || creator_key,
                 count: countByKey[creator_key] || 0,
               };
@@ -2513,9 +2576,11 @@ export default function AdminPage() {
               }}
             >
               {list.length === 0 && <div style={{ opacity: 0.7 }}>No creators with MLOs yet. Add MLOs first, then add logos here to feature them on the homepage.</div>}
-              {list.map((creator: { creator_key: string; logo_url: string | null; spotlight_logo_size: number; displayName: string; count: number }) => {
+              {list.map((creator: { creator_key: string; logo_url: string | null; spotlight_logo_size: number; verified_creator: boolean; partnership: boolean; displayName: string; count: number }) => {
                 const size = spotlightLogoSize[creator.creator_key] ?? creator.spotlight_logo_size;
                 const displayLogoUrl = spotlightLogoUrlOverride[creator.creator_key] || creator.logo_url;
+                const verifiedCreator = spotlightVerifiedCreator[creator.creator_key] ?? creator.verified_creator;
+                const partnership = spotlightPartnership[creator.creator_key] ?? creator.partnership;
                 return (
                   <div
                     key={creator.creator_key}
@@ -2531,6 +2596,28 @@ export default function AdminPage() {
                     }}
                   >
                     <div style={{ minWidth: 120, fontWeight: 600 }}>{creator.displayName}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={verifiedCreator}
+                          onChange={(e) =>
+                            setSpotlightVerifiedCreator((prev) => ({ ...prev, [creator.creator_key]: e.target.checked }))
+                          }
+                        />
+                        <span>Verified</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={partnership}
+                          onChange={(e) =>
+                            setSpotlightPartnership((prev) => ({ ...prev, [creator.creator_key]: e.target.checked }))
+                          }
+                        />
+                        <span>Partner</span>
+                      </label>
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       {displayLogoUrl ? (
                         <img
@@ -2628,6 +2715,8 @@ export default function AdminPage() {
                               creator_key: creator.creator_key,
                               logo_url: displayLogoUrl || undefined,
                               spotlight_logo_size: spotlightLogoSize[creator.creator_key] ?? creator.spotlight_logo_size,
+                              verified_creator: verifiedCreator,
+                              partnership,
                             }),
                           });
                           if (res.ok) {
@@ -2657,6 +2746,8 @@ export default function AdminPage() {
                             body: JSON.stringify({
                               creator_key: creator.creator_key,
                               spotlight_logo_size: spotlightLogoSize[creator.creator_key] ?? creator.spotlight_logo_size,
+                              verified_creator: verifiedCreator,
+                              partnership,
                             }),
                           });
                           if (res.ok) loadCreatorTiles();
@@ -2740,6 +2831,11 @@ export default function AdminPage() {
             {showReview ? "Hide ▲" : "Show ▼"}
           </button>
         </div>
+        {showReview && (
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            Review and approve MLO submission requests from visitors.
+          </div>
+        )}
         {showReview && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>

@@ -1,5 +1,6 @@
 "use client";
 
+import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
 
@@ -49,9 +50,7 @@ export default function AboutPage() {
           <div className="header-top">
             <div className="header-brand" />
             <div className="header-actions">
-              <span className="header-pill">
-                Discord
-              </span>
+              <DiscordLink />
               <LanguageSelect />
             </div>
           </div>
@@ -67,9 +66,6 @@ export default function AboutPage() {
             </a>
             <a href="/creators" className="header-link">
               {t("nav.creators")}
-            </a>
-            <a href="/requests" className="header-link">
-              {t("nav.requests")}
             </a>
             <a href="/submit" className="header-link">
               {t("nav.submit")}

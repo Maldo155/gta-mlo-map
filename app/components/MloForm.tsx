@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, CategoryKey } from "@/app/lib/categories";
+import CategorySelect from "./CategorySelect";
 import { useLanguage } from "./LanguageProvider";
 
 type Props = {
@@ -31,8 +32,16 @@ export default function MloForm({ onCreated, adminToken, coords, mlos }: Props) 
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [loading, setLoading] = useState(false);
-  const xNum = x.trim() === "" ? NaN : Number(x);
-  const yNum = y.trim() === "" ? NaN : Number(y);
+
+  function parseCoord(val: string): number {
+    const s = val.trim();
+    if (!s) return NaN;
+    const first = s.split(/[,\s]+/)[0]?.trim();
+    const n = first ? Number(first) : NaN;
+    return Number.isFinite(n) ? n : NaN;
+  }
+  const xNum = parseCoord(x);
+  const yNum = parseCoord(y);
   const canSubmit =
     Boolean(adminToken) &&
     Boolean(name.trim()) &&
@@ -194,16 +203,10 @@ export default function MloForm({ onCreated, adminToken, coords, mlos }: Props) 
         </datalist>
       </div>
 
-      <select
+      <CategorySelect
         value={category}
-        onChange={(e) => setCategory(e.target.value as CategoryKey)}
-      >
-        {CATEGORIES.map((c) => (
-          <option key={c.key} value={c.key}>
-            {c.icon} {t(`categories.${c.key}`)}
-          </option>
-        ))}
-      </select>
+        onChange={setCategory}
+      />
 
      <input
         type="text"

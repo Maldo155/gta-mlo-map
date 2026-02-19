@@ -1,5 +1,6 @@
 "use client";
 
+import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
 
@@ -49,9 +50,7 @@ export default function RequestsPage() {
         <div className="header-top">
           <div className="header-brand" />
           <div className="header-actions">
-            <span className="header-pill">
-              Discord
-            </span>
+            <DiscordLink />
             <LanguageSelect />
             
           </div>
@@ -69,15 +68,12 @@ export default function RequestsPage() {
           <a href="/creators" className="header-link">
             {t("nav.creators")}
           </a>
-          <a href="/requests" className="header-link">
-            {t("nav.requests")}
-          </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}
           </a>
         </nav>
         </header>
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
+        <div className="requests-page-wrap" style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
         <h1>{t("requests.title")}</h1>
         <p style={{ opacity: 0.7 }}>
           {t("requests.subtitle")}

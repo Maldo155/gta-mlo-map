@@ -453,7 +453,12 @@ button:hover {
   font-size: 13px;
 }
 
-.header-pill:hover {
+a.header-pill {
+  text-decoration: none;
+}
+
+.header-pill:hover,
+a.header-pill:hover {
   background: #1b2740;
 }
 
@@ -805,6 +810,14 @@ button:hover {
     padding: 20px 18px !important;
     line-height: 1.6;
   }
+
+  /* Submit and form pages: safe-area padding */
+  .submit-page-wrap,
+  .requests-page-wrap {
+    padding-left: max(16px, env(safe-area-inset-left, 0)) !important;
+    padding-right: max(16px, env(safe-area-inset-right, 0)) !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0)) !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -868,6 +881,13 @@ button:hover {
     font-size: 16px !important;
     padding: 16px 14px !important;
   }
+
+  .submit-page-wrap,
+  .requests-page-wrap {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 0)) !important;
+  }
 }
 
 /* Creators page */
@@ -895,6 +915,14 @@ button:hover {
   .creators-logo-float .header-logo {
     width: 64px;
     height: 64px;
+  }
+
+  /* Creator tile summary: wrap badges + button on small screens */
+  .creators-page-content details summary {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    min-height: 52px !important;
+    align-content: center !important;
   }
 }
 
