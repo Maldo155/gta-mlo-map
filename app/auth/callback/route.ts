@@ -40,18 +40,22 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    const cookieHeader = request.headers.get("cookie") || "";
     const isPkce = error.message.toLowerCase().includes("pkce");
+    if (isPkce && code) {
+      // Server couldn't find verifier (cookies not in request). Try client-side - browser has document.cookie.
+      const clientParams = new URLSearchParams({ code, next: next || "/servers/submit" });
+      return NextResponse.redirect(
+        `${requestUrl.origin}/auth/callback/client?${clientParams.toString()}`
+      );
+    }
+    const cookieHeader = request.headers.get("cookie") || "";
     const debugParams = new URLSearchParams({
       error: error.message,
       debug_step: "exchange",
       debug_cookies: cookieHeader.length > 0 ? "present" : "absent",
-      debug_cookie_count: String(cookieHeader ? cookieHeader.split(";").filter(Boolean).length : 0),
       debug_origin: requestUrl.origin,
-      debug_code: code ? "yes" : "no",
     });
     if (next) debugParams.set("next", next);
-    if (isPkce) debugParams.set("auto_retry", "1");
     return NextResponse.redirect(
       `${requestUrl.origin}/login?${debugParams.toString()}`
     );
