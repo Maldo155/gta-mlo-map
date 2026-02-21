@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 
@@ -10,11 +10,14 @@ import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
  */
 function AuthStartContent() {
   const searchParams = useSearchParams();
-  const started = useRef(false);
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
+    // Block React Strict Mode double-mount: same page, second run within 2s = skip.
+    const key = "oauth_started_at";
+    const now = Date.now();
+    const prev = typeof window !== "undefined" ? parseInt(sessionStorage.getItem(key) || "0", 10) : 0;
+    if (prev && now - prev < 2000) return;
+    if (typeof window !== "undefined") sessionStorage.setItem(key, String(now));
 
     const next = searchParams.get("next") || "/servers/submit";
     const code = searchParams.get("code");

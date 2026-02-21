@@ -64,7 +64,8 @@ function ClientCallbackContent() {
           setStatus("error");
           router.replace(buildErrorUrl(error.message));
         } else {
-          router.replace(next.startsWith("/") ? next : "/servers/submit");
+          // Full page redirect so destination gets fresh session from cookies
+          window.location.replace(next.startsWith("/") ? next : "/servers/submit");
         }
       })
       .catch((err) => {
