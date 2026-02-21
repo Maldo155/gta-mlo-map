@@ -39,20 +39,31 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const signInTriggered = useRef(false);
 
-  // Initiate OAuth from homepage only - works reliably (cookies set before redirect)
+  // Initiate OAuth from homepage only. Must await so PKCE verifier cookie is set before redirect.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const signin = searchParams.get("signin");
     const next = searchParams.get("next") || "/servers/submit";
-    if (signin === "1" && !signInTriggered.current) {
-      signInTriggered.current = true;
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next.startsWith("/") ? next : "/servers/submit")}`;
-      getSupabaseBrowser().auth.signInWithOAuth({
+    if (signin !== "1" || signInTriggered.current) return;
+    signInTriggered.current = true;
+
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next.startsWith("/") ? next : "/servers/submit")}`;
+    getSupabaseBrowser()
+      .auth.signInWithOAuth({
         provider: "discord",
         options: { redirectTo },
+      })
+      .then(({ data, error }) => {
+        if (error) {
+          signInTriggered.current = false;
+          window.location.href = `/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`;
+          return;
+        }
+        if (data?.url) {
+          window.history.replaceState({}, "", window.location.pathname);
+          window.location.href = data.url;
+        }
       });
-      window.history.replaceState({}, "", window.location.pathname);
-    }
   }, [searchParams]);
 
   // Recovery: if Supabase redirects to /?code=xxx instead of /auth/callback, redirect to callback
