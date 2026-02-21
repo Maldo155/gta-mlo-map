@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AuthLink from "./components/AuthLink";
+import { getSupabaseBrowser } from "./lib/supabaseBrowser";
 import DiscordLink from "./components/DiscordLink";
 import LanguageSelect from "./components/LanguageSelect";
 import { useLanguage } from "./components/LanguageProvider";
@@ -31,8 +34,26 @@ type RequestItem = {
   created_at?: string;
 };
 
-export default function Home() {
+function HomeContent() {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const signInTriggered = useRef(false);
+
+  // Initiate OAuth from homepage only - works reliably (cookies set before redirect)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const signin = searchParams.get("signin");
+    const next = searchParams.get("next") || "/servers/submit";
+    if (signin === "1" && !signInTriggered.current) {
+      signInTriggered.current = true;
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next.startsWith("/") ? next : "/servers/submit")}`;
+      getSupabaseBrowser().auth.signInWithOAuth({
+        provider: "discord",
+        options: { redirectTo },
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [searchParams]);
 
   // Recovery: if Supabase redirects to /?code=xxx instead of /auth/callback, redirect to callback
   useEffect(() => {
@@ -1301,5 +1322,28 @@ export default function Home() {
 
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            background: "#0f1115",
+          }}
+        >
+          <p>Loading…</p>
+        </main>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

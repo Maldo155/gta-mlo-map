@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useLanguage } from "./LanguageProvider";
-import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 
 type Props = {
   onLogin: () => void;
@@ -21,18 +20,10 @@ export default function AdminLogin({ onLogin }: Props) {
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1");
 
-  async function signInWithDiscord() {
+  function signInWithDiscord() {
     setError("");
     setDiscordLoading(true);
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const { error: oauthError } = await getSupabaseBrowser().auth.signInWithOAuth({
-      provider: "discord",
-      options: { redirectTo: `${origin}/auth/callback?next=/admin` },
-    });
-    if (oauthError) {
-      setError(oauthError.message);
-      setDiscordLoading(false);
-    }
+    window.location.href = `/?signin=1&next=${encodeURIComponent("/admin")}`;
   }
 
   async function submit() {

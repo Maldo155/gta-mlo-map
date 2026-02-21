@@ -283,7 +283,7 @@ export default function SubmitServerPage() {
               You need to sign in with Discord to list your FiveM server.
             </p>
             <a
-              href="/login?next=/servers/submit"
+              href="/?signin=1&next=%2Fservers%2Fsubmit"
               style={{
                 display: "inline-block",
                 padding: "14px 28px",

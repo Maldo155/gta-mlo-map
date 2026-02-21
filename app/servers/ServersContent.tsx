@@ -210,7 +210,7 @@ export default function ServersContent() {
             {t("servers.subtitle")}
           </p>
           <a
-            href={session ? "/servers/submit" : "/login?next=%2Fservers%2Fsubmit"}
+            href={session ? "/servers/submit" : "/?signin=1&next=%2Fservers%2Fsubmit"}
             style={{
               display: "inline-block",
               marginBottom: 24,

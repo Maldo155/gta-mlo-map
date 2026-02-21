@@ -29,7 +29,7 @@ function LoginContent() {
   const hasDebug =
     debugStep || debugCookies || debugOrigin || debugCode;
 
-  // Auto-retry once when PKCE fails (second attempt usually works - cookie timing)
+  // Auto-retry PKCE: redirect to homepage which initiates OAuth (works first try)
   useEffect(() => {
     if (
       !autoRetry ||
@@ -42,11 +42,7 @@ function LoginContent() {
     if (alreadyRetried) return;
     sessionStorage.setItem("pkce_auto_retry", "1");
     const next = nextPath.startsWith("/") ? nextPath : "/servers/submit";
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    getSupabaseBrowser().auth.signInWithOAuth({
-      provider: "discord",
-      options: { redirectTo },
-    });
+    window.location.href = `/?signin=1&next=${encodeURIComponent(next)}`;
   }, [autoRetry, errorFromCallback, nextPath]);
 
   useEffect(() => {
@@ -83,20 +79,11 @@ function LoginContent() {
     return () => data.subscription.unsubscribe();
   }, [router, nextPath]);
 
-  async function signInWithDiscord() {
+  function signInWithDiscord() {
     if (signingIn) return;
     setSigningIn(true);
     const next = nextPath.startsWith("/") ? nextPath : "/servers/submit";
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { error } = await getSupabaseBrowser().auth.signInWithOAuth({
-      provider: "discord",
-      options: { redirectTo },
-    });
-    if (error) {
-      alert(error.message);
-      setSigningIn(false);
-    }
+    window.location.href = `/?signin=1&next=${encodeURIComponent(next)}`;
   }
 
   if (loading) {
