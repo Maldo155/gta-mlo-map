@@ -31,7 +31,7 @@ function LoginContent() {
   const hasDebug =
     debugStep || debugWhere || debugCookies || debugSbCookies || debugOrigin || debugReferer;
 
-  // Auto-retry PKCE: redirect to homepage which initiates OAuth (works first try)
+  // Auto-retry PKCE: redirect to auth/start to re-initiate OAuth
   useEffect(() => {
     if (
       !autoRetry ||
@@ -44,7 +44,7 @@ function LoginContent() {
     if (alreadyRetried) return;
     sessionStorage.setItem("pkce_auto_retry", "1");
     const next = nextPath.startsWith("/") ? nextPath : "/servers/submit";
-    window.location.href = `/?signin=1&next=${encodeURIComponent(next)}`;
+    window.location.href = `/auth/start?next=${encodeURIComponent(next)}`;
   }, [autoRetry, errorFromCallback, nextPath]);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ function LoginContent() {
     if (signingIn) return;
     setSigningIn(true);
     const next = nextPath.startsWith("/") ? nextPath : "/servers/submit";
-    window.location.href = `/?signin=1&next=${encodeURIComponent(next)}`;
+    window.location.href = `/auth/start?next=${encodeURIComponent(next)}`;
   }
 
   if (loading) {

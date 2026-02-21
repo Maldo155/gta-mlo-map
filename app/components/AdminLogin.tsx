@@ -24,7 +24,7 @@ export default function AdminLogin({ onLogin }: Props) {
   function signInWithDiscord() {
     setError("");
     setDiscordLoading(true);
-    window.location.href = `/?signin=1&next=${encodeURIComponent("/admin")}`;
+    window.location.href = `/auth/start?next=${encodeURIComponent("/admin")}`;
   }
 
   async function submit() {

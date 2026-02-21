@@ -25,8 +25,7 @@ export default function AuthLink() {
     );
   }
 
-  // Always start OAuth from homepage - works first try (cookie timing)
-  const signInUrl = "/?signin=1&next=%2Fservers%2Fsubmit";
+  const signInUrl = "/auth/start?next=%2Fservers%2Fsubmit";
   return (
     <a
       href={signInUrl}

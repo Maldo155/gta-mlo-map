@@ -278,7 +278,7 @@ export default function EditServerPage() {
   }
 
   if (!session) {
-    router.replace(`/?signin=1&next=${encodeURIComponent(`/servers/${id}/edit`)}`);
+    router.replace(`/auth/start?next=${encodeURIComponent(`/servers/${id}/edit`)}`);
     return null;
   }
 
