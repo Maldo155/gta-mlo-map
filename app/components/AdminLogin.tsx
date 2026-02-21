@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 import { useLanguage } from "./LanguageProvider";
 
 type Props = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 
@@ -12,6 +12,7 @@ function ClientCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "error">("loading");
+  const exchanged = useRef(false);
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -27,6 +28,16 @@ function ClientCallbackContent() {
       return;
     }
 
+    // Prevent double exchange (React Strict Mode, back button, or multiple rapid loads).
+    const exchangeKey = `auth_exchange_${code}`;
+    if (typeof window !== "undefined" && sessionStorage.getItem(exchangeKey)) {
+      return;
+    }
+    if (typeof window !== "undefined") sessionStorage.setItem(exchangeKey, "1");
+
+    if (exchanged.current) return;
+    exchanged.current = true;
+
     const buildErrorUrl = (errMsg: string) => {
       const cookieStr = typeof document !== "undefined" ? document.cookie : "";
       const cookieCount = cookieStr ? cookieStr.split(";").filter(Boolean).length : 0;
@@ -39,8 +50,9 @@ function ClientCallbackContent() {
         debug_cookie_count: String(cookieCount),
         debug_sb_cookies: hasSb ? "yes" : "no",
         debug_origin: typeof window !== "undefined" ? window.location.origin : "",
-        auto_retry: "1",
       });
+      // Only auto-retry for PKCE (verifier missing). "Unable to exchange" means code was already used.
+      if (errMsg.toLowerCase().includes("pkce")) params.set("auto_retry", "1");
       if (next) params.set("next", next);
       return `/login?${params.toString()}`;
     };

@@ -5,7 +5,6 @@ import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 
 export default function AuthLink() {
-  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {

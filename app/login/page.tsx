@@ -205,7 +205,10 @@ function LoginContent() {
               }}
             >
               <p style={{ margin: 0, marginBottom: 12 }}>
-                {decodeURIComponent(errorFromCallback)}
+                {errorFromCallback.toLowerCase().includes("unable to exchange") ||
+                errorFromCallback.toLowerCase().includes("external code")
+                  ? "That sign-in link was already used or expired. Click \"Sign in with Discord\" below to start a fresh sign-in."
+                  : decodeURIComponent(errorFromCallback)}
               </p>
               {hasDebug && (
                 <div
