@@ -1,7 +1,7 @@
 "use client";
 
 const DISCORD_URL =
-  process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/ggZyHs2n";
+  process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/DhyBRUUn";
 
 export default function DiscordLink() {
   if (DISCORD_URL) {

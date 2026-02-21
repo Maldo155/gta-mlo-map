@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "discord-setup": "node scripts/discord-setup.js",
     "bot": "node scripts/discord-chat-bot/index.js"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.39.7",
     "discord.js": "^14.25.1",
     "dotenv": "^17.3.1",

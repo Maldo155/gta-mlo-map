@@ -1,5 +1,6 @@
 "use client";
 
+import AuthLink from "../components/AuthLink";
 import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
@@ -50,8 +51,9 @@ export default function AboutPage() {
           <div className="header-top">
             <div className="header-brand" />
             <div className="header-actions">
-              <DiscordLink />
               <LanguageSelect />
+              <AuthLink />
+              <DiscordLink />
             </div>
           </div>
           <nav className="header-nav">
@@ -64,10 +66,13 @@ export default function AboutPage() {
             <a href="/about" className="header-link">
               {t("nav.about")}
             </a>
-            <a href="/creators" className="header-link">
-              {t("nav.creators")}
-            </a>
-            <a href="/submit" className="header-link">
+          <a href="/creators" className="header-link">
+            {t("nav.creators")}
+          </a>
+          <a href="/servers" className="header-link">
+            {t("nav.servers")}
+          </a>
+          <a href="/submit" className="header-link">
               {t("nav.submit")}
             </a>
           </nav>

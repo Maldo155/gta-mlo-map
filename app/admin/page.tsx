@@ -12,6 +12,7 @@ import { CATEGORIES, type CategoryKey } from "../lib/categories";
 import { BANNER_FONTS } from "../lib/bannerFonts";
 import Sidebar from "../components/Sidebar";
 import AdminLogin from "../components/AdminLogin";
+import AuthLink from "../components/AuthLink";
 import DiscordLink from "../components/DiscordLink";
 import AdminCreatorTilesGrid from "../components/AdminCreatorTilesGrid";
 import LanguageSelect from "../components/LanguageSelect";
@@ -919,6 +920,9 @@ export default function AdminPage() {
   const [showRequests, setShowRequests] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [requestSearch, setRequestSearch] = useState("");
+  const [servers, setServers] = useState<any[]>([]);
+  const [showServers, setShowServers] = useState(false);
+  const [serverSearch, setServerSearch] = useState("");
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
   const [session, setSession] = useState<Session | null>(null);
@@ -1036,6 +1040,35 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
+    const devSecret =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("adminDevSecret")
+        : null;
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
+    // Dev bypass: try dev secret first when on localhost
+    if (isLocalhost && devSecret) {
+      setCheckingAuth(true);
+      fetch("/api/admin/me", {
+        headers: { "X-Admin-Dev-Secret": devSecret },
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            setAuthError("");
+            setIsAdmin(true);
+          } else {
+            sessionStorage.removeItem("adminDevSecret");
+            setIsAdmin(false);
+          }
+        })
+        .catch(() => setIsAdmin(false))
+        .finally(() => setCheckingAuth(false));
+      return;
+    }
+
     if (!session?.access_token) {
       setIsAdmin(false);
       setAuthError("");
@@ -1082,6 +1115,16 @@ export default function AdminPage() {
     const res = await fetch("/api/requests", { cache: "no-store" });
     const json = await res.json();
     setRequests(json.requests || []);
+  }
+
+  async function loadServers() {
+    try {
+      const res = await fetch("/api/servers", { cache: "no-store" });
+      const json = await res.json();
+      setServers(json.servers || []);
+    } catch {
+      setServers([]);
+    }
   }
 
   async function loadCreatorTiles() {
@@ -1136,7 +1179,7 @@ export default function AdminPage() {
   }
 
   async function refreshAll() {
-    await Promise.all([loadMlos(), loadRequests(), loadCreatorTiles(), loadBanner(), loadChatThreads()]);
+    await Promise.all([loadMlos(), loadRequests(), loadServers(), loadCreatorTiles(), loadBanner(), loadChatThreads()]);
     setLastRefreshAt(new Date().toLocaleTimeString());
   }
 
@@ -1391,6 +1434,23 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteServer(id: string) {
+    if (!confirm("Delete this FiveM server?")) return;
+    const res = await fetch(`/api/servers/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (res.ok) {
+      loadServers();
+    } else {
+      const text = await res.text();
+      alert(`Delete failed: ${text}`);
+    }
+  }
+
 
 
   // ----------------------------
@@ -1513,8 +1573,9 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="header-actions">
-            <DiscordLink />
             <LanguageSelect />
+            <AuthLink />
+            <DiscordLink />
             
           </div>
         </div>
@@ -1530,6 +1591,9 @@ export default function AdminPage() {
           </a>
           <a href="/creators" className="header-link">
             {t("nav.creators")}
+          </a>
+          <a href="/servers" className="header-link">
+            {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}
@@ -2943,6 +3007,123 @@ export default function AdminPage() {
         )}
       </div>
 
+      <div
+        style={{
+          marginBottom: 12,
+          border: "1px solid #243046",
+          borderRadius: 10,
+          padding: 12,
+          background: "#10162b",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: showServers ? 10 : 0,
+          }}
+        >
+          <div style={{ fontWeight: 700 }}>FiveM Servers</div>
+          <button onClick={() => setShowServers((v) => !v)}>
+            {showServers ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
+          </button>
+        </div>
+        {showServers && (
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            Manage FiveM servers listed on /servers. Delete spam or inappropriate listings.
+          </div>
+        )}
+        {showServers && (
+          <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <input
+                placeholder="Search servers..."
+                value={serverSearch}
+                onChange={(e) => setServerSearch(e.target.value)}
+                style={{ maxWidth: 260 }}
+              />
+            </div>
+            <div
+              style={{
+                border: "1px solid #243046",
+                borderRadius: 10,
+                padding: 12,
+                background: "#10162b",
+                maxHeight: 320,
+                overflowY: "auto",
+              }}
+            >
+              {servers.length === 0 && (
+                <div style={{ opacity: 0.7 }}>No servers yet.</div>
+              )}
+              {servers
+                .filter((s: any) => {
+                  if (!serverSearch.trim()) return true;
+                  const q = serverSearch.trim().toLowerCase();
+                  return (
+                    (s.server_name || "").toLowerCase().includes(q) ||
+                    (s.owner_name || "").toLowerCase().includes(q)
+                  );
+                })
+                .map((s: any, idx: number, arr: any[]) => (
+                  <div
+                    key={s.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "10px 0",
+                      borderBottom:
+                        idx === arr.length - 1 ? "none" : "1px solid #243046",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>
+                        {s.server_name}
+                      </div>
+                      {s.owner_name && (
+                        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+                          {s.owner_name}
+                        </div>
+                      )}
+                      {s.connect_url && (
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#64748b",
+                            marginTop: 2,
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {s.connect_url}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => deleteServer(s.id)}
+                      style={{
+                        background: "#7f1d1d",
+                        border: "1px solid #7f1d1d",
+                        color: "white",
+                        width: 28,
+                        height: 28,
+                        borderRadius: 6,
+                        padding: 0,
+                        flexShrink: 0,
+                      }}
+                      aria-label="Delete server"
+                      title="Delete server"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </>
+        )}
+      </div>
 
       <div style={{ height: "70vh", marginTop: 12 }}>
         <Map

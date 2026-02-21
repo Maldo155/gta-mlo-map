@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import AuthLink from "../components/AuthLink";
 import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
@@ -196,8 +197,9 @@ export default function CreatorsContent() {
         <div className="header-top">
           <div className="header-brand" />
           <div className="header-actions">
-            <DiscordLink />
             <LanguageSelect />
+            <AuthLink />
+            <DiscordLink />
             
           </div>
         </div>
@@ -213,6 +215,9 @@ export default function CreatorsContent() {
           </a>
           <a href="/creators" className="header-link">
             {t("nav.creators")}
+          </a>
+          <a href="/servers" className="header-link">
+            {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}

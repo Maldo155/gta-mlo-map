@@ -1,0 +1,39 @@
+---
+description: Discord OAuth + Supabase auth - do not break
+globs: app/auth/**/*, app/login/**/*, app/components/AuthLink.tsx, app/lib/supabase/**/*, app/lib/supabaseBrowser.ts
+alwaysApply: false
+---
+
+# Discord OAuth Auth – Critical Constraints
+
+This project uses **Supabase SSR** for auth: browser client initiates OAuth (stores PKCE verifier in cookies), server Route Handler exchanges code for session (reads verifier from request cookies).
+
+## Flow
+
+1. **Initiation**: `signInWithOAuth` in browser (AuthLink, login page) → `createBrowserClient` stores PKCE verifier in cookies.
+2. **Callback**: `/auth/callback` is a **Route Handler** (`route.ts`) that uses `createServerClient` to read request cookies and call `exchangeCodeForSession(code)` → finds verifier in cookies.
+3. **redirectTo**: Always `{origin}/auth/callback?next=...` — use `window.location.origin` exactly.
+
+## Do NOT
+
+- Replace `localhost` with `127.0.0.1` in `redirectTo` — causes cookie/redirect origin mismatch.
+- Make the callback a client page — the server Route Handler must receive the request cookies (with PKCE verifier) to exchange the code.
+- Remove the `cookies` option from `createServerClient` — it needs `getAll`/`setAll` to read and set auth cookies.
+
+## Key Files
+
+- `app/auth/callback/route.ts` — server Route Handler (exchanges code, redirects).
+- `app/lib/supabase/server.ts` — `createServerClient` with Next.js cookies.
+- `app/lib/supabase/client.ts` — `createBrowserClient` (used by supabaseBrowser).
+- `app/components/AuthLink.tsx`, `app/login/page.tsx` — OAuth initiation.
+
+## Supabase Redirect URLs
+
+In Supabase Dashboard → Authentication → URL Configuration → Redirect URLs, add:
+- Dev: `http://localhost:PORT/auth/callback` and `http://127.0.0.1:PORT/auth/callback` (use your actual port, e.g. 3002)
+- Production: `https://your-domain.com/auth/callback`
+
+## Server Ownership & Editing
+
+- Servers are linked to Discord users via `user_id` (Supabase auth).
+- Only the owning user can edit their server. Edit UI when `session.user.id === server.user_id`.

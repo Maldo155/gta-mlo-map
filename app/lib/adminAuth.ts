@@ -8,7 +8,33 @@ const ADMIN_EMAILS = (
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
 
+const ADMIN_DEV_SECRET = process.env.ADMIN_DEV_SECRET || "";
+
+function getDevSecret(req: Request): string {
+  const header = req.headers.get("x-admin-dev-secret") || "";
+  const cookie = req.headers.get("cookie") || "";
+  const match = cookie.match(/admin_dev=([^;]+)/);
+  return header || (match ? decodeURIComponent(match[1]) : "") || "";
+}
+
 export async function requireAdmin(req: Request) {
+  // Dev bypass: localhost + ADMIN_DEV_SECRET in header or cookie = allow (no Supabase session needed)
+  const host = req.headers.get("host") || "";
+  const devSecret = getDevSecret(req);
+  if (
+    process.env.NODE_ENV === "development" &&
+    ADMIN_DEV_SECRET &&
+    (host.startsWith("localhost") || host.startsWith("127.0.0.1")) &&
+    devSecret === ADMIN_DEV_SECRET
+  ) {
+    return {
+      user: {
+        id: "dev-bypass",
+        email: "dev@localhost",
+      },
+    };
+  }
+
   const authHeader = req.headers.get("authorization") || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
 

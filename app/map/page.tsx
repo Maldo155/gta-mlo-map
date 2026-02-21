@@ -7,6 +7,7 @@ import PublicFilterSidebar from "../components/PublicFilterSidebar";
 import Sidebar from "../components/Sidebar";
 import MapWelcomePopup from "../components/MapWelcomePopup";
  import { CategoryKey } from "../lib/categories";
+import AuthLink from "../components/AuthLink";
 import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
@@ -269,8 +270,9 @@ function MapPageContent() {
             </div>
           </div>
           <div className="header-actions">
-            <DiscordLink />
             <LanguageSelect />
+            <AuthLink />
+            <DiscordLink />
           </div>
         </div>
         <nav className="header-nav">
@@ -285,6 +287,9 @@ function MapPageContent() {
           </a>
           <a href="/creators" className="header-link">
             {t("nav.creators")}
+          </a>
+          <a href="/servers" className="header-link">
+            {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}

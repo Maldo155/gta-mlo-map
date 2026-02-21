@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import AuthLink from "@/app/components/AuthLink";
 import DiscordLink from "@/app/components/DiscordLink";
 import LanguageSelect from "@/app/components/LanguageSelect";
 import MloBackButton from "@/app/components/MloBackButton";
@@ -130,8 +131,9 @@ export default async function MloPage({
           <div className="header-top">
             <div className="header-brand" />
             <div className="header-actions">
-              <DiscordLink />
               <LanguageSelect />
+              <AuthLink />
+              <DiscordLink />
             </div>
           </div>
           <nav className="header-nav">

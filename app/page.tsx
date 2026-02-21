@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AuthLink from "./components/AuthLink";
 import DiscordLink from "./components/DiscordLink";
 import LanguageSelect from "./components/LanguageSelect";
 import { useLanguage } from "./components/LanguageProvider";
@@ -32,6 +33,21 @@ type RequestItem = {
 
 export default function Home() {
   const { t } = useLanguage();
+
+  // Recovery: if Supabase redirects to /?code=xxx instead of /auth/callback, redirect to callback
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      const next = params.get("next") || "/servers/submit";
+      window.location.replace(
+        `${window.location.origin}/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
+      );
+      return;
+    }
+  }, []);
+
   const [mlos, setMlos] = useState<Mlo[]>([]);
   const [banner, setBanner] = useState<{
     title: string | null;
@@ -398,6 +414,8 @@ export default function Home() {
           <div className="header-top">
             <div className="header-brand" />
             <div className="header-actions">
+              <LanguageSelect />
+              <AuthLink />
               <DiscordLink />
               <button
                 type="button"
@@ -418,7 +436,6 @@ export default function Home() {
               >
                 {t("contact.button")}
               </button>
-              <LanguageSelect />
             </div>
           </div>
         <nav className="header-nav">
@@ -433,6 +450,9 @@ export default function Home() {
           </a>
           <a href="/creators" className="header-link">
             {t("nav.creators")}
+          </a>
+          <a href="/servers" className="header-link">
+            {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">
             {t("nav.submit")}
