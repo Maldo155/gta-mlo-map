@@ -41,6 +41,7 @@ export async function GET(request: Request) {
 
   if (error) {
     const cookieHeader = request.headers.get("cookie") || "";
+    const isPkce = error.message.toLowerCase().includes("pkce");
     const debugParams = new URLSearchParams({
       error: error.message,
       debug_step: "exchange",
@@ -49,6 +50,8 @@ export async function GET(request: Request) {
       debug_origin: requestUrl.origin,
       debug_code: code ? "yes" : "no",
     });
+    if (next) debugParams.set("next", next);
+    if (isPkce) debugParams.set("auto_retry", "1");
     return NextResponse.redirect(
       `${requestUrl.origin}/login?${debugParams.toString()}`
     );

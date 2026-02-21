@@ -20,6 +20,7 @@ function LoginContent() {
 
   const nextPath = searchParams.get("next") || "/servers/submit";
   const errorFromCallback = searchParams.get("error");
+  const autoRetry = searchParams.get("auto_retry") === "1";
   const debugStep = searchParams.get("debug_step");
   const debugCookies = searchParams.get("debug_cookies");
   const debugCookieCount = searchParams.get("debug_cookie_count");
@@ -27,6 +28,32 @@ function LoginContent() {
   const debugCode = searchParams.get("debug_code");
   const hasDebug =
     debugStep || debugCookies || debugOrigin || debugCode;
+
+  // Auto-retry once when PKCE fails (second attempt usually works - cookie timing)
+  useEffect(() => {
+    if (
+      !autoRetry ||
+      !errorFromCallback ||
+      !errorFromCallback.toLowerCase().includes("pkce") ||
+      typeof window === "undefined"
+    )
+      return;
+    const alreadyRetried = sessionStorage.getItem("pkce_auto_retry");
+    if (alreadyRetried) return;
+    sessionStorage.setItem("pkce_auto_retry", "1");
+    const next = nextPath.startsWith("/") ? nextPath : "/servers/submit";
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    getSupabaseBrowser().auth.signInWithOAuth({
+      provider: "discord",
+      options: { redirectTo },
+    });
+  }, [autoRetry, errorFromCallback, nextPath]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !errorFromCallback) {
+      sessionStorage.removeItem("pkce_auto_retry");
+    }
+  }, [errorFromCallback]);
 
   useEffect(() => {
     setShowDevHint(
