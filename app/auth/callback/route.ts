@@ -18,7 +18,9 @@ export async function GET(request: Request) {
     const debugParams = new URLSearchParams({
       error: errorParam,
       debug_step: "oauth_return",
+      debug_where: "server",
       debug_origin: requestUrl.origin,
+      debug_referer: request.headers.get("referer") || "none",
     });
     return NextResponse.redirect(
       `${requestUrl.origin}/login?${debugParams.toString()}`
@@ -29,6 +31,7 @@ export async function GET(request: Request) {
     const debugParams = new URLSearchParams({
       error: "No authorization code received.",
       debug_step: "no_code",
+      debug_where: "server",
       debug_origin: requestUrl.origin,
     });
     return NextResponse.redirect(
@@ -49,11 +52,17 @@ export async function GET(request: Request) {
       );
     }
     const cookieHeader = request.headers.get("cookie") || "";
+    const cookieCount = cookieHeader ? cookieHeader.split(";").filter(Boolean).length : 0;
+    const hasSupabaseCookies = /sb-/i.test(cookieHeader);
     const debugParams = new URLSearchParams({
       error: error.message,
-      debug_step: "exchange",
+      debug_step: "server_exchange",
+      debug_where: "server",
       debug_cookies: cookieHeader.length > 0 ? "present" : "absent",
+      debug_cookie_count: String(cookieCount),
+      debug_sb_cookies: hasSupabaseCookies ? "yes" : "no",
       debug_origin: requestUrl.origin,
+      debug_referer: request.headers.get("referer") || "none",
     });
     if (next) debugParams.set("next", next);
     return NextResponse.redirect(

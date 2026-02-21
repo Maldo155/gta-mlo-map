@@ -22,12 +22,14 @@ function LoginContent() {
   const errorFromCallback = searchParams.get("error");
   const autoRetry = searchParams.get("auto_retry") === "1";
   const debugStep = searchParams.get("debug_step");
+  const debugWhere = searchParams.get("debug_where");
   const debugCookies = searchParams.get("debug_cookies");
   const debugCookieCount = searchParams.get("debug_cookie_count");
+  const debugSbCookies = searchParams.get("debug_sb_cookies");
   const debugOrigin = searchParams.get("debug_origin");
-  const debugCode = searchParams.get("debug_code");
+  const debugReferer = searchParams.get("debug_referer");
   const hasDebug =
-    debugStep || debugCookies || debugOrigin || debugCode;
+    debugStep || debugWhere || debugCookies || debugSbCookies || debugOrigin || debugReferer;
 
   // Auto-retry PKCE: redirect to homepage which initiates OAuth (works first try)
   useEffect(() => {
@@ -209,20 +211,49 @@ function LoginContent() {
                 <div
                   style={{
                     marginTop: 12,
-                    padding: 12,
-                    background: "rgba(0,0,0,0.3)",
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontFamily: "monospace",
+                    padding: 14,
+                    background: "rgba(0,0,0,0.4)",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontFamily: "ui-monospace, monospace",
                     textAlign: "left",
+                    border: "1px solid rgba(255,255,255,0.1)",
                   }}
                 >
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Debug info</div>
-                  {debugStep && <div>Step: {debugStep}</div>}
-                  {debugCookies && <div>Cookies in callback: {debugCookies}</div>}
-                  {debugCookieCount != null && <div>Cookie count: {debugCookieCount}</div>}
-                  {debugOrigin && <div>Callback origin: {debugOrigin}</div>}
-                  {debugCode && <div>Code received: {debugCode}</div>}
+                  <div style={{ fontWeight: 800, marginBottom: 10, fontSize: 14 }}>Error details</div>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <tbody>
+                      {debugStep && (
+                        <tr><td style={{ padding: "4px 0", opacity: 0.8 }}>Step</td><td style={{ padding: "4px 0", paddingLeft: 12 }}>{debugStep}</td></tr>
+                      )}
+                      {debugWhere && (
+                        <tr><td style={{ padding: "4px 0", opacity: 0.8 }}>Where failed</td><td style={{ padding: "4px 0", paddingLeft: 12 }}>{debugWhere}</td></tr>
+                      )}
+                      {debugCookies && (
+                        <tr><td style={{ padding: "4px 0", opacity: 0.8 }}>Cookies received</td><td style={{ padding: "4px 0", paddingLeft: 12 }}>{debugCookies}</td></tr>
+                      )}
+                      {debugCookieCount != null && (
+                        <tr><td style={{ padding: "4px 0", opacity: 0.8 }}>Cookie count</td><td style={{ padding: "4px 0", paddingLeft: 12 }}>{debugCookieCount}</td></tr>
+                      )}
+                      {debugSbCookies && (
+                        <tr><td style={{ padding: "4px 0", opacity: 0.8 }}>Supabase (sb-) cookies</td><td style={{ padding: "4px 0", paddingLeft: 12 }}>{debugSbCookies}</td></tr>
+                      )}
+                      {debugOrigin && (
+                        <tr><td style={{ padding: "4px 0", opacity: 0.8 }}>Callback origin</td><td style={{ padding: "4px 0", paddingLeft: 12 }}>{debugOrigin}</td></tr>
+                      )}
+                      {debugReferer && (
+                        <tr><td style={{ padding: "4px 0", opacity: 0.8 }}>Referer</td><td style={{ padding: "4px 0", paddingLeft: 12, wordBreak: "break-all" }}>{debugReferer}</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  <p style={{ margin: "10px 0 0", fontSize: 11, opacity: 0.8 }}>
+                    {debugWhere === "server" && debugCookies === "absent" && "→ Server got no cookies. Possible: redirect URL mismatch (www vs non-www), or cookies stripped in transit."}
+                    {debugWhere === "server" && debugCookies === "present" && debugSbCookies === "no" && "→ Server got cookies but no Supabase (sb-) cookies. PKCE verifier was never stored or wrong domain."}
+                    {debugWhere === "server" && debugCookies === "present" && debugSbCookies === "yes" && "→ Server had Supabase cookies but exchange failed. Verifier may be under different key or expired."}
+                    {debugWhere === "browser" && debugCookies === "absent" && "→ Browser had no cookies. Verifier was never stored before redirect to Discord."}
+                    {debugWhere === "browser" && debugCookies === "present" && debugSbCookies === "no" && "→ Browser had cookies but no Supabase. Wrong origin when OAuth was initiated."}
+                    {debugWhere === "browser" && debugCookies === "present" && debugSbCookies === "yes" && "→ Browser had Supabase cookies but exchange failed. Possible: code expired or already used."}
+                  </p>
                 </div>
               )}
               {errorFromCallback.toLowerCase().includes("pkce") && !hasDebug && (

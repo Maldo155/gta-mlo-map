@@ -18,27 +18,46 @@ function ClientCallbackContent() {
     const next = searchParams.get("next") || "/servers/submit";
 
     if (!code) {
-      router.replace(`/login?error=${encodeURIComponent("No authorization code.")}`);
+      const params = new URLSearchParams({
+        error: "No authorization code.",
+        debug_step: "client_no_code",
+        debug_where: "browser",
+      });
+      router.replace(`/login?${params.toString()}`);
       return;
     }
+
+    const buildErrorUrl = (errMsg: string) => {
+      const cookieStr = typeof document !== "undefined" ? document.cookie : "";
+      const cookieCount = cookieStr ? cookieStr.split(";").filter(Boolean).length : 0;
+      const hasSb = /sb-/i.test(cookieStr);
+      const params = new URLSearchParams({
+        error: errMsg,
+        debug_step: "client_exchange",
+        debug_where: "browser",
+        debug_cookies: cookieStr.length > 0 ? "present" : "absent",
+        debug_cookie_count: String(cookieCount),
+        debug_sb_cookies: hasSb ? "yes" : "no",
+        debug_origin: typeof window !== "undefined" ? window.location.origin : "",
+        auto_retry: "1",
+      });
+      if (next) params.set("next", next);
+      return `/login?${params.toString()}`;
+    };
 
     getSupabaseBrowser()
       .auth.exchangeCodeForSession(code)
       .then(({ error }) => {
         if (error) {
           setStatus("error");
-          router.replace(
-            `/login?error=${encodeURIComponent(error.message)}&auto_retry=1`
-          );
+          router.replace(buildErrorUrl(error.message));
         } else {
           router.replace(next.startsWith("/") ? next : "/servers/submit");
         }
       })
       .catch((err) => {
         setStatus("error");
-        router.replace(
-          `/login?error=${encodeURIComponent(err?.message || "Auth failed")}`
-        );
+        router.replace(buildErrorUrl(err?.message || "Auth failed"));
       });
   }, [router, searchParams]);
 
