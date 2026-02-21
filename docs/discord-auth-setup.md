@@ -25,9 +25,10 @@ To require Discord login before adding a FiveM server, complete these steps.
 
 1. **Authentication** → **URL Configuration** → **Redirect URLs**
 2. Add **every** URL where users can sign in (must match exactly, including port):
-   - Production: `https://mlomesh.vercel.app/auth/callback`
+   - Production: `https://mlomesh.vercel.app/auth/callback/client`
+   - (Also add `https://mlomesh.vercel.app/auth/callback` if you use the server callback)
    - Custom domain: `https://www.mlomesh.com.isla.pr/auth/callback` (if used)
-- Local dev: `http://127.0.0.1:3000/auth/callback` — use 127.0.0.1 only. **Remove** `http://localhost:3000/auth/callback` if present; Supabase may redirect to localhost instead of 127.0.0.1, and cookies won’t transfer (different origin).
+   - Local dev: `http://127.0.0.1:3000/auth/callback/client` — use 127.0.0.1 only. **Remove** `http://localhost:3000/auth/callback` if present; Supabase may redirect to localhost instead of 127.0.0.1, and cookies won’t transfer (different origin).
 3. **Site URL** must match where users actually sign in. If you use `https://mlomesh.vercel.app`, set Site URL to that—not a different domain. A mismatch can cause Supabase to redirect incorrectly and drop the auth code.
 4. Save changes
 

@@ -22,12 +22,13 @@ function AuthStartContent() {
     // Recovery: Supabase sometimes redirects to origin with ?code= instead of callback
     if (code) {
       window.location.replace(
-        `${window.location.origin}/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
+        `${window.location.origin}/auth/callback/client?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
       );
       return;
     }
 
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next.startsWith("/") ? next : "/servers/submit")}`;
+    // Use client callback directly - avoids server PKCE failure and double Discord authorize
+    const redirectTo = `${window.location.origin}/auth/callback/client?next=${encodeURIComponent(next.startsWith("/") ? next : "/servers/submit")}`;
 
     getSupabaseBrowser()
       .auth.signInWithOAuth({

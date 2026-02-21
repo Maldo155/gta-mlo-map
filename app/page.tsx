@@ -44,7 +44,7 @@ function HomeContent() {
     if (code) {
       const next = params.get("next") || "/servers/submit";
       window.location.replace(
-        `${window.location.origin}/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
+        `${window.location.origin}/auth/callback/client?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
       );
       return;
     }
