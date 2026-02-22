@@ -17,7 +17,7 @@ import {
 } from "../lib/serverTags";
 import { extractCfxId } from "../lib/cfxUtils";
 
-const PREDEFINED_LOOKING_FOR_KEYS = new Set(LOOKING_FOR_POSITIONS.map((p) => p.key));
+const PREDEFINED_LOOKING_FOR_KEYS = new Set<string>(LOOKING_FOR_POSITIONS.map((p) => p.key));
 
 const PROFANITY_BLOCKLIST = new Set([
   "ass", "asses", "asshole", "assholes",
