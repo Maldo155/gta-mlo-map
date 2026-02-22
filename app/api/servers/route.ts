@@ -4,12 +4,13 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { extractCfxId } from "@/app/lib/cfxUtils";
+import { syncServerToDiscordInBackground } from "@/app/lib/discordServerForum";
 import type { Server } from "@/app/lib/serverTags";
 
 const TABLE = "servers";
 
 const VALID_REGIONS = ["NA", "EU", "SA", "OC", "ASIA", "OTHER"] as const;
-const VALID_ECONOMY = ["realistic", "boosted", "hardcore", "custom"] as const;
+const VALID_ECONOMY = ["realistic", "boosted", "hardcore", "vmenu", "custom"] as const;
 const VALID_RP = ["serious", "semi", "casual"] as const;
 const VALID_CRIMINAL = ["heists", "gangs", "drugs", "vehicles", "organized", "mixed", "minimal"] as const;
 const VALID_LOOKING_FOR = ["leo", "ems", "gangs", "mc", "staff", "fire", "doj", "mechanic", "realtor", "news"] as const;
@@ -27,7 +28,22 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const res = NextResponse.json({ servers: (data || []) as Server[] });
+  const { data: likesData } = await supabase
+    .from("server_likes")
+    .select("server_id");
+  const likeCountMap: Record<string, number> = {};
+  for (const row of likesData || []) {
+    const sid = row.server_id as string;
+    likeCountMap[sid] = (likeCountMap[sid] || 0) + 1;
+  }
+
+  const servers = (data || []).map((s: { id: string; views?: number }) => ({
+    ...s,
+    views: s.views ?? 0,
+    like_count: likeCountMap[s.id] ?? 0,
+  })) as Server[];
+
+  const res = NextResponse.json({ servers });
   res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   return res;
 }
@@ -155,5 +171,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ id: data?.id, success: true });
+  const serverId = data?.id;
+  if (serverId) {
+    syncServerToDiscordInBackground(serverId).catch((err) =>
+      console.error("[Server Discord Sync]", err)
+    );
+  }
+
+  return NextResponse.json({ id: serverId, success: true });
 }

@@ -5,9 +5,10 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { requireAdmin } from "@/app/lib/adminAuth";
 import { extractCfxId } from "@/app/lib/cfxUtils";
+import { syncServerToDiscordInBackground } from "@/app/lib/discordServerForum";
 
 const VALID_REGIONS = ["NA", "EU", "SA", "OC", "ASIA", "OTHER"] as const;
-const VALID_ECONOMY = ["realistic", "boosted", "hardcore", "custom"] as const;
+const VALID_ECONOMY = ["realistic", "boosted", "hardcore", "vmenu", "custom"] as const;
 const VALID_RP = ["serious", "semi", "casual"] as const;
 const VALID_CRIMINAL = ["heists", "gangs", "drugs", "vehicles", "organized", "mixed", "minimal"] as const;
 const VALID_LOOKING_FOR = ["leo", "ems", "gangs", "mc", "staff", "fire", "doj", "mechanic", "realtor", "news"] as const;
@@ -192,6 +193,10 @@ export async function PATCH(
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
+
+  syncServerToDiscordInBackground(id).catch((err) =>
+    console.error("[Server Discord Sync]", err)
+  );
 
   return NextResponse.json({ success: true });
 }

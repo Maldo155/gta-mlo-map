@@ -1002,6 +1002,30 @@ a.header-pill:hover {
   .mlo-conveyor-track {
     gap: 6px !important;
   }
+
+  .partner-conveyor-track {
+    gap: 10px !important;
+  }
+
+  .partner-conveyor-card {
+    width: 260px !important;
+    min-width: 260px;
+    padding: 18px !important;
+  }
+
+  .partner-conveyor-card > div:first-child {
+    min-height: 110px !important;
+  }
+
+  .partner-conveyor-card img {
+    max-height: 72px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .partner-conveyor-viewport {
+    width: 270px !important; /* 260 + 10 gap */
+  }
 }
 
 /* Prevent horizontal scroll on mobile */
@@ -1027,6 +1051,11 @@ a.header-pill:hover {
     padding: 8px 10px;
     font-size: 10px;
   }
+}
+
+/* Servers page: role chips hover */
+.servers-role-chip:hover {
+  opacity: 0.9;
 }
 
 /* ===== Servers page: mobile-friendly ===== */

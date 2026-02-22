@@ -81,6 +81,7 @@ type Props = {
   tileStatus: string;
   setTileStatus: (v: string) => void;
   accessToken: string | null;
+  adminDevSecret?: string;
   mlos: any[];
   loadCreatorTiles: () => Promise<void>;
   loadMlos: () => Promise<void>;
@@ -120,7 +121,14 @@ const TILE_TEXTURES_FALLBACK: { id: string; name: string; draw: TextureDraw }[] 
   { id: "solid_plain", name: "Solid", draw: (ctx, w, h) => { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h); }},
 ];
 
+function authHeaders(props: { accessToken: string | null; adminDevSecret?: string }): Record<string, string> {
+  if (props.accessToken) return { Authorization: `Bearer ${props.accessToken}` };
+  if (props.adminDevSecret) return { "X-Admin-Dev-Secret": props.adminDevSecret };
+  return {};
+}
+
 export default function AdminCreatorTilesGrid(props: Props) {
+  const hasAuth = Boolean(props.accessToken) || Boolean(props.adminDevSecret);
   const tex = props.TILE_TEXTURES?.length ? props.TILE_TEXTURES : TILE_TEXTURES_FALLBACK;
   const norm = (s: string) =>
     String(s || "").trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "") || "";
@@ -146,13 +154,13 @@ export default function AdminCreatorTilesGrid(props: Props) {
                     <span style={{ flex: 1, fontWeight: 600 }}>{t.creator_key}</span>
                     <button type="button" title="Delete tile" onClick={async () => {
                       const key = String(t.creator_key || "").trim().toLowerCase();
-                      if (!key || !props.accessToken) return;
+                      if (!key || !hasAuth) return;
                       const normalizedKey = norm(key);
                       const mloCount = (props.mlos || []).filter((m: { creator?: string }) => norm(String(m.creator || "")) === normalizedKey).length;
                       const mloMsg = mloCount > 0 ? ` and ${mloCount} MLO(s)` : "";
                       if (!confirm(`Delete tile "${t.creator_key}"? This removes the tile${mloMsg} from Supabase. This cannot be undone.`)) return;
                       try {
-                        const res = await fetch(`/api/creator-tiles?creator_key=${encodeURIComponent(key)}`, { method: "DELETE", headers: { Authorization: `Bearer ${props.accessToken}` } });
+                        const res = await fetch(`/api/creator-tiles?creator_key=${encodeURIComponent(key)}`, { method: "DELETE", headers: authHeaders(props) });
                         const json = await res.json().catch(() => ({}));
                         if (res.ok) {
                           const n = json.deletedMlos ?? 0;
@@ -169,12 +177,12 @@ export default function AdminCreatorTilesGrid(props: Props) {
                       <select value={i + 1} onChange={async (e) => {
                         const n = parseInt(e.target.value, 10);
                         const total = props.creatorTiles?.length ?? 1;
-                        if (!Number.isFinite(n) || n < 1 || n > total || n === i + 1 || !props.accessToken) return;
+                        if (!Number.isFinite(n) || n < 1 || n > total || n === i + 1 || !hasAuth) return;
                         const keys = (props.creatorTiles || []).map((x: { creator_key?: string }) => String(x.creator_key || "").trim()).filter(Boolean);
                         const moved = keys.splice(i, 1)[0];
                         keys.splice(n - 1, 0, moved);
                         try {
-                          const res = await fetch("/api/creator-tiles/reorder", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${props.accessToken}` }, body: JSON.stringify({ creator_keys: keys }) });
+                          const res = await fetch("/api/creator-tiles/reorder", { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders(props) }, body: JSON.stringify({ creator_keys: keys }) });
                           const json = await res.json().catch(() => ({}));
                           if (res.ok) {
                             props.setTileStatus("Order saved.");
@@ -237,21 +245,21 @@ export default function AdminCreatorTilesGrid(props: Props) {
               <input
                 type="file"
                 accept="image/*"
-                disabled={!props.accessToken || !props.tileCreatorKey.trim()}
+                disabled={!hasAuth || !props.tileCreatorKey.trim()}
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (!file || !props.accessToken || !props.tileCreatorKey.trim()) return;
+                  if (!file || !hasAuth || !props.tileCreatorKey.trim()) return;
                   props.setTileUploading(true);
                   props.setTileStatus("Uploading logo...");
                   try {
                     const form = new FormData();
                     form.append("file", file);
                     form.append("creator_key", props.tileCreatorKey);
-                    const res = await fetch("/api/creator-tiles/upload-logo", { method: "POST", headers: { Authorization: `Bearer ${props.accessToken}` }, body: form });
+                    const res = await fetch("/api/creator-tiles/upload-logo", { method: "POST", headers: authHeaders(props), body: form });
                     const json = await res.json();
                     const url = json?.publicUrl ? String(json.publicUrl).trim() : null;
                     if (res.ok && url) {
-                      const patchRes = await fetch("/api/creator-tiles", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${props.accessToken}` }, body: JSON.stringify({ creator_key: props.tileCreatorKey, logo_url: url }) });
+                      const patchRes = await fetch("/api/creator-tiles", { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders(props) }, body: JSON.stringify({ creator_key: props.tileCreatorKey, logo_url: url }) });
                       if (patchRes.ok) {
                         props.setTileLogoUrl(url);
                         props.setTileStatus("Logo saved. Discord post will update.");
@@ -279,11 +287,11 @@ export default function AdminCreatorTilesGrid(props: Props) {
             <input type="url" placeholder="https://..." value={props.tileWebsiteUrl} onChange={(e) => props.setTileWebsiteUrl(e.target.value)} style={{ display: "block", marginTop: 4, width: "100%", maxWidth: 420, padding: "8px 10px", borderRadius: 6, border: "1px solid #374151", background: "#111827", color: "#e5e7eb" }} />
           </div>
           <button onClick={async () => {
-            if (!props.accessToken || !props.tileCreatorKey.trim()) return;
+            if (!hasAuth || !props.tileCreatorKey.trim()) return;
             props.setTileDiscordSaving(true);
             props.setTileStatus("Saving Discord & description...");
             try {
-              const res = await fetch("/api/creator-tiles", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${props.accessToken}` }, body: JSON.stringify({ creator_key: props.tileCreatorKey, creator_discord_invite: props.tileDiscordInvite.trim() || null, creator_description: props.tileDescription.trim() || null, creator_website_url: props.tileWebsiteUrl.trim() || null }) });
+              const res = await fetch("/api/creator-tiles", { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders(props) }, body: JSON.stringify({ creator_key: props.tileCreatorKey, creator_discord_invite: props.tileDiscordInvite.trim() || null, creator_description: props.tileDescription.trim() || null, creator_website_url: props.tileWebsiteUrl.trim() || null }) });
               const json = await res.json();
               if (!res.ok) props.setTileStatus(json.error || "Save failed.");
               else { props.setTileStatus("Discord & description saved."); props.loadCreatorTiles(); }
@@ -359,9 +367,9 @@ export default function AdminCreatorTilesGrid(props: Props) {
         <div style={{ marginTop: 12 }}>
           <canvas ref={props.tileDesignCanvasRef} width={TILE_DESIGN_W} height={TILE_DESIGN_H} style={{ display: "block", maxWidth: "100%", width: 400, height: (400 / TILE_DESIGN_W) * TILE_DESIGN_H, border: "1px solid #333", borderRadius: 8, background: "#0f1115" }} />
         </div>
-        <button type="button" disabled={!props.accessToken || !props.tileCreatorKey.trim() || props.designGenerating} onClick={async () => {
+        <button type="button" disabled={!hasAuth || !props.tileCreatorKey.trim() || props.designGenerating} onClick={async () => {
           const canvas = props.tileDesignCanvasRef.current;
-          if (!canvas || !props.accessToken || !props.tileCreatorKey.trim()) return;
+          if (!canvas || !hasAuth || !props.tileCreatorKey.trim()) return;
           props.setDesignGenerating(true);
           props.setTileStatus("Generating and uploading...");
           try {
@@ -374,7 +382,7 @@ export default function AdminCreatorTilesGrid(props: Props) {
           form.set("file", blob, "tile.png");
           form.set("fit_mode", "cover");
           form.set("creator_key", props.tileCreatorKey);
-          const res = await fetch("/api/creator-tiles/upload", { method: "POST", headers: { Authorization: `Bearer ${props.accessToken}` }, body: form });
+          const res = await fetch("/api/creator-tiles/upload", { method: "POST", headers: authHeaders(props), body: form });
           const json = await res.json();
           if (!res.ok) { props.setTileStatus(json.error || "Upload failed."); return; }
           props.setTileBannerUrl(json.publicUrl || "");
@@ -383,7 +391,7 @@ export default function AdminCreatorTilesGrid(props: Props) {
             const logoForm = new FormData();
             logoForm.set("file", props.designLogoFile);
             logoForm.set("creator_key", props.tileCreatorKey);
-            const logoRes = await fetch("/api/creator-tiles/upload-logo", { method: "POST", headers: { Authorization: `Bearer ${props.accessToken}` }, body: logoForm });
+            const logoRes = await fetch("/api/creator-tiles/upload-logo", { method: "POST", headers: authHeaders(props), body: logoForm });
             const logoJson = await logoRes.json();
             if (logoRes.ok && logoJson.publicUrl) props.setTileLogoUrl(logoJson.publicUrl);
           }
@@ -419,7 +427,7 @@ export default function AdminCreatorTilesGrid(props: Props) {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input type="file" accept="image/*" onChange={async (e) => {
           const file = e.target.files?.[0];
-          if (!file || !props.accessToken || !props.tileCreatorKey.trim()) return;
+          if (!file || !hasAuth || !props.tileCreatorKey.trim()) return;
           props.setTileUploading(true);
           props.setTileStatus("Uploading and formatting image...");
           const form = new FormData();
@@ -427,7 +435,7 @@ export default function AdminCreatorTilesGrid(props: Props) {
           form.set("fit_mode", props.tileFitMode);
           form.set("creator_key", props.tileCreatorKey);
           try {
-            const res = await fetch("/api/creator-tiles/upload", { method: "POST", headers: { Authorization: `Bearer ${props.accessToken}` }, body: form });
+            const res = await fetch("/api/creator-tiles/upload", { method: "POST", headers: authHeaders(props), body: form });
             const json = await res.json();
             if (!res.ok) props.setTileStatus(json.error || "Upload failed.");
             else { props.setTileBannerUrl(json.publicUrl || ""); props.setTileStatus("Image uploaded."); }
@@ -466,11 +474,11 @@ export default function AdminCreatorTilesGrid(props: Props) {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button onClick={async () => {
-          if (!props.accessToken || !props.tileCreatorKey.trim()) return;
+          if (!hasAuth || !props.tileCreatorKey.trim()) return;
           props.setTileSaving(true);
           props.setTileStatus("Saving...");
           try {
-            const res = await fetch("/api/creator-tiles", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${props.accessToken}` }, body: JSON.stringify({ creator_key: props.tileCreatorKey, banner_url: props.tileBannerUrl || null, logo_url: props.tileLogoUrl || null, fit_mode: props.tileFitMode, zoom: props.tileZoom, position: props.tilePosition, button_label: props.tileButtonLabel || null, button_url: props.tileButtonUrl || null, tile_border_glow: props.tileBorderGlow, tile_border_glow_color: props.tileBorderGlow ? props.tileBorderGlowColor : null, verified_creator: props.tileVerifiedCreator, partnership: props.tilePartnership, creator_discord_invite: props.tileDiscordInvite.trim() || null, creator_description: props.tileDescription.trim() || null, creator_website_url: props.tileWebsiteUrl.trim() || null }) });
+            const res = await fetch("/api/creator-tiles", { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders(props) }, body: JSON.stringify({ creator_key: props.tileCreatorKey, banner_url: props.tileBannerUrl || null, logo_url: props.tileLogoUrl || null, fit_mode: props.tileFitMode, zoom: props.tileZoom, position: props.tilePosition, button_label: props.tileButtonLabel || null, button_url: props.tileButtonUrl || null, tile_border_glow: props.tileBorderGlow, tile_border_glow_color: props.tileBorderGlow ? props.tileBorderGlowColor : null, verified_creator: props.tileVerifiedCreator, partnership: props.tilePartnership, creator_discord_invite: props.tileDiscordInvite.trim() || null, creator_description: props.tileDescription.trim() || null, creator_website_url: props.tileWebsiteUrl.trim() || null }) });
             const json = await res.json();
             if (!res.ok) props.setTileStatus(json.error || "Save failed.");
             else { props.setTileStatus("Saved."); props.loadCreatorTiles(); }
@@ -480,12 +488,12 @@ export default function AdminCreatorTilesGrid(props: Props) {
           {props.tileSaving ? "Saving..." : "Save tile"}
         </button>
         <button onClick={async () => {
-          if (!props.accessToken || !props.tileCreatorKey.trim()) return;
+          if (!hasAuth || !props.tileCreatorKey.trim()) return;
           if (!confirm("Delete this creator tile?")) return;
           props.setTileDeleting(true);
           props.setTileStatus("Deleting...");
           try {
-            const res = await fetch(`/api/creator-tiles?creator_key=${encodeURIComponent(props.tileCreatorKey)}`, { method: "DELETE", headers: { Authorization: `Bearer ${props.accessToken}` } });
+            const res = await fetch(`/api/creator-tiles?creator_key=${encodeURIComponent(props.tileCreatorKey)}`, { method: "DELETE", headers: authHeaders(props) });
             const json = await res.json();
             if (!res.ok) props.setTileStatus(json.error || "Delete failed.");
             else { props.setTileStatus("Deleted."); props.loadCreatorTiles(); }

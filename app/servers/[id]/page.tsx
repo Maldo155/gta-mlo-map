@@ -13,7 +13,7 @@ import {
   LOOKING_FOR_POSITIONS,
 } from "@/app/lib/serverTags";
 import LivePlayerCount from "@/app/components/LivePlayerCount";
-import EditServerButton from "@/app/components/EditServerButton";
+import ServerDetailActions from "@/app/components/ServerDetailActions";
 
 const BASE = "https://mlomesh.vercel.app";
 
@@ -492,67 +492,7 @@ export default async function ServerPage({
             </div>
           )}
 
-          <div className="server-detail-actions" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {server.connect_url && (
-              <a
-                href={
-                  server.connect_url.startsWith("http://") ||
-                  server.connect_url.startsWith("https://") ||
-                  server.connect_url.startsWith("fivem://")
-                    ? server.connect_url
-                    : `https://${server.connect_url}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "14px 24px",
-                  borderRadius: 10,
-                  background: "#22c55e",
-                  color: "#0f172a",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  fontSize: 16,
-                }}
-              >
-                Join Server
-              </a>
-            )}
-            {server.discord_url && (
-              <a
-                href={server.discord_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "14px 24px",
-                  borderRadius: 10,
-                  border: "1px solid #5865f2",
-                  color: "#5865f2",
-                  textDecoration: "none",
-                  fontSize: 16,
-                }}
-              >
-                Discord
-              </a>
-            )}
-            {server.website_url && (
-              <a
-                href={server.website_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: "14px 24px",
-                  borderRadius: 10,
-                  border: "1px solid #4b5563",
-                  color: "#9ca3af",
-                  textDecoration: "none",
-                  fontSize: 16,
-                }}
-              >
-                Website
-              </a>
-            )}
-            <EditServerButton serverId={server.id} serverUserId={server.user_id} />
-          </div>
+          <ServerDetailActions server={server} />
         </section>
         </div>
       </div>

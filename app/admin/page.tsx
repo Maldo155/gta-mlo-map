@@ -923,6 +923,7 @@ export default function AdminPage() {
   const [servers, setServers] = useState<any[]>([]);
   const [showServers, setShowServers] = useState(false);
   const [serverSearch, setServerSearch] = useState("");
+  const [serverSyncDiscordLoading, setServerSyncDiscordLoading] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
   const [session, setSession] = useState<Session | null>(null);
@@ -1016,6 +1017,19 @@ export default function AdminPage() {
   const [designLogoSize, setDesignLogoSize] = useState(40);
   const [designGenerating, setDesignGenerating] = useState(false);
   const tileDesignCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const adminDevSecret =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+      ? sessionStorage.getItem("adminDevSecret") || undefined
+      : undefined;
+  const hasAuth = Boolean(accessToken) || Boolean(adminDevSecret);
+  function authHeaders(): Record<string, string> {
+    if (accessToken) return { Authorization: `Bearer ${accessToken}` };
+    if (adminDevSecret) return { "X-Admin-Dev-Secret": adminDevSecret };
+    return {};
+  }
 
   // ----------------------------
   // CHECK ADMIN LOGIN (SUPABASE AUTH)
@@ -1151,8 +1165,8 @@ export default function AdminPage() {
   }
 
   async function loadChatThreads() {
-    if (!accessToken) return;
-    const res = await fetch("/api/chat/threads", { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!hasAuth) return;
+    const res = await fetch("/api/chat/threads", { headers: authHeaders() });
     const json = await res.json();
     setChatThreads(json.threads || []);
   }
@@ -1164,11 +1178,11 @@ export default function AdminPage() {
   }
 
   async function sendChatReply() {
-    if (!selectedChatThreadId || !chatReplyInput.trim() || !accessToken) return;
+    if (!selectedChatThreadId || !chatReplyInput.trim() || !hasAuth) return;
     setChatReplySending(true);
     const res = await fetch("/api/chat/reply", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ threadId: selectedChatThreadId, message: chatReplyInput.trim() }),
     });
     setChatReplySending(false);
@@ -1403,9 +1417,7 @@ export default function AdminPage() {
     if (!confirm("Delete ALL MLOs? This cannot be undone.")) return;
     const res = await fetch("/api/mlo?all=true", {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: authHeaders(),
     });
 
     if (res.ok) {
@@ -1424,9 +1436,7 @@ export default function AdminPage() {
     if (!confirm("Delete this request?")) return;
     const res = await fetch(`/api/requests?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: authHeaders(),
     });
 
     if (res.ok) {
@@ -1434,13 +1444,31 @@ export default function AdminPage() {
     }
   }
 
+  async function syncServersToDiscord() {
+    if (!hasAuth) return;
+    setServerSyncDiscordLoading(true);
+    try {
+      const res = await fetch("/api/servers/sync-discord", {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        alert(json.message || `Synced ${json.synced ?? 0} servers to Discord.`);
+        loadServers();
+      } else {
+        alert(json.error || "Sync failed.");
+      }
+    } finally {
+      setServerSyncDiscordLoading(false);
+    }
+  }
+
   async function deleteServer(id: string) {
     if (!confirm("Delete this FiveM server?")) return;
     const res = await fetch(`/api/servers/${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: authHeaders(),
     });
 
     if (res.ok) {
@@ -1724,6 +1752,13 @@ export default function AdminPage() {
               coords={coords}
               onCreated={loadMlos}
               adminToken={accessToken || ""}
+              adminDevSecret={
+                typeof window !== "undefined" &&
+                (window.location.hostname === "localhost" ||
+                  window.location.hostname === "127.0.0.1")
+                  ? sessionStorage.getItem("adminDevSecret") || undefined
+                  : undefined
+              }
               mlos={mlos}
             />
 
@@ -1923,7 +1958,7 @@ export default function AdminPage() {
             <button
               disabled={bannerSaving}
               onClick={async () => {
-                if (!accessToken) return;
+                if (!hasAuth) return;
                 setBannerSaving(true);
                 const titleSize = bannerTitleFontSize.trim() ? Number(bannerTitleFontSize) : null;
                 const subtitleSize = bannerSubtitleFontSize.trim() ? Number(bannerSubtitleFontSize) : null;
@@ -1931,7 +1966,7 @@ export default function AdminPage() {
                   method: "PATCH",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
+                    ...authHeaders(),
                   },
                   body: JSON.stringify({
                     title: bannerTitle.trim() || null,
@@ -2164,10 +2199,10 @@ export default function AdminPage() {
                       onClick={async () => {
                         const ids = Array.from(editMloSelectedIds);
                         if (!ids.length || !confirm(t("admin.deleteSelected") + ` (${ids.length})?`)) return;
-                        if (!accessToken) return;
+                        if (!hasAuth) return;
                         await fetch(`/api/mlo?ids=${encodeURIComponent(ids.join(","))}`, {
                           method: "DELETE",
-                          headers: { Authorization: `Bearer ${accessToken}` },
+                          headers: authHeaders(),
                         });
                         setEditMloSelectedIds(new Set());
                         setEditingMloId(null);
@@ -2284,7 +2319,7 @@ export default function AdminPage() {
                           <button
                             disabled={editMloSaving}
                             onClick={async () => {
-                              if (!editMloForm || !editingMloId || !accessToken) return;
+                              if (!editMloForm || !editingMloId || !hasAuth) return;
                               const xNum = Number(editMloForm.x);
                               const yNum = Number(editMloForm.y);
                               if (!Number.isFinite(xNum) || !Number.isFinite(yNum)) return;
@@ -2293,7 +2328,7 @@ export default function AdminPage() {
                                 method: "PUT",
                                 headers: {
                                   "Content-Type": "application/json",
-                                  Authorization: `Bearer ${accessToken}`,
+                                  ...authHeaders(),
                                 },
                                 body: JSON.stringify({
                                   id: editingMloId,
@@ -2407,10 +2442,10 @@ export default function AdminPage() {
                           <button
                             onClick={async () => {
                               if (!confirm(`Delete "${mlo.name || "this MLO"}"?`)) return;
-                              if (!accessToken) return;
+                              if (!hasAuth) return;
                               await fetch(`/api/mlo?id=${encodeURIComponent(mlo.id)}`, {
                                 method: "DELETE",
-                                headers: { Authorization: `Bearer ${accessToken}` },
+                                headers: authHeaders(),
                               });
                               setEditingMloId(null);
                               setEditMloForm(null);
@@ -2538,6 +2573,13 @@ export default function AdminPage() {
             tileStatus={tileStatus}
             setTileStatus={setTileStatus}
             accessToken={accessToken}
+            adminDevSecret={
+              typeof window !== "undefined" &&
+              (window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1")
+                ? sessionStorage.getItem("adminDevSecret") || undefined
+                : undefined
+            }
             mlos={mlos}
             loadCreatorTiles={loadCreatorTiles}
             loadMlos={loadMlos}
@@ -2707,7 +2749,7 @@ export default function AdminPage() {
                         style={{ fontSize: 11 }}
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (!file || !accessToken) return;
+                          if (!file || !hasAuth) return;
                           setSpotlightUploading(creator.creator_key);
                           try {
                             const form = new FormData();
@@ -2715,7 +2757,7 @@ export default function AdminPage() {
                             form.set("creator_key", creator.creator_key);
                             const res = await fetch("/api/creator-tiles/upload-logo", {
                               method: "POST",
-                              headers: { Authorization: `Bearer ${accessToken}` },
+                              headers: authHeaders(),
                               body: form,
                             });
                             const json = await res.json();
@@ -2727,7 +2769,7 @@ export default function AdminPage() {
                                 method: "PATCH",
                                 headers: {
                                   "Content-Type": "application/json",
-                                  Authorization: `Bearer ${accessToken}`,
+                                  ...authHeaders(),
                                 },
                                 body: JSON.stringify({
                                   creator_key: creator.creator_key,
@@ -2766,14 +2808,14 @@ export default function AdminPage() {
                       type="button"
                       disabled={spotlightSaving === creator.creator_key}
                       onClick={async () => {
-                        if (!accessToken) return;
+                        if (!hasAuth) return;
                         setSpotlightSaving(creator.creator_key);
                         try {
                           const res = await fetch("/api/creator-tiles", {
                             method: "PATCH",
                             headers: {
                               "Content-Type": "application/json",
-                              Authorization: `Bearer ${accessToken}`,
+                              ...authHeaders(),
                             },
                             body: JSON.stringify({
                               creator_key: creator.creator_key,
@@ -2798,14 +2840,14 @@ export default function AdminPage() {
                       type="button"
                       disabled={spotlightSaving === creator.creator_key}
                       onClick={async () => {
-                        if (!accessToken) return;
+                        if (!hasAuth) return;
                         setSpotlightSaving(creator.creator_key);
                         try {
                           const res = await fetch("/api/creator-tiles", {
                             method: "PATCH",
                             headers: {
                               "Content-Type": "application/json",
-                              Authorization: `Bearer ${accessToken}`,
+                              ...authHeaders(),
                             },
                             body: JSON.stringify({
                               creator_key: creator.creator_key,
@@ -3036,13 +3078,27 @@ export default function AdminPage() {
         )}
         {showServers && (
           <>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
               <input
                 placeholder="Search servers..."
                 value={serverSearch}
                 onChange={(e) => setServerSearch(e.target.value)}
                 style={{ maxWidth: 260 }}
               />
+              <button
+                onClick={syncServersToDiscord}
+                disabled={serverSyncDiscordLoading || servers.length === 0}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  background: "#1e3a5f",
+                  color: "white",
+                  border: "1px solid #3b82f6",
+                  borderRadius: 6,
+                }}
+              >
+                {serverSyncDiscordLoading ? "Syncing…" : "Sync to Discord"}
+              </button>
             </div>
             <div
               style={{
@@ -3146,6 +3202,7 @@ export default function AdminPage() {
         mlos={mlos.filter((m) => m.id === selectedMloId)}
         onRefresh={loadMlos}
         adminToken={accessToken || ""}
+        adminDevSecret={adminDevSecret}
         selectedId={selectedMloId}
       />
 

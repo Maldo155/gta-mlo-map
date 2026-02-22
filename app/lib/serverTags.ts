@@ -13,6 +13,7 @@ export const ECONOMY_TYPES = [
   { key: "realistic", label: "Realistic" },
   { key: "boosted", label: "Boosted" },
   { key: "hardcore", label: "Hardcore" },
+  { key: "vmenu", label: "Vmenu" },
   { key: "custom", label: "Custom" },
 ] as const;
 
@@ -120,4 +121,6 @@ export type Server = {
   banner_url?: string | null;
   thumbnail_url?: string | null;
   logo_url?: string | null;
+  views?: number;
+  like_count?: number;
 };

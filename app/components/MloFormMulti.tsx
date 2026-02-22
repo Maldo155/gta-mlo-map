@@ -30,6 +30,7 @@ const emptySlot = (): Slot => ({
 type Props = {
   onCreated: () => void;
   adminToken: string;
+  adminDevSecret?: string;
   coords: { x: number; y: number } | null;
   mlos: Array<{
     id: string;
@@ -46,6 +47,7 @@ type Props = {
 export default function MloFormMulti({
   onCreated,
   adminToken,
+  adminDevSecret,
   coords,
   mlos,
 }: Props) {
@@ -180,8 +182,8 @@ export default function MloFormMulti({
   }
 
   const completeSlots = slots.filter(isSlotComplete);
-  const canSubmit =
-    Boolean(adminToken) && completeSlots.length > 0;
+  const hasAuth = Boolean(adminToken) || Boolean(adminDevSecret);
+  const canSubmit = hasAuth && completeSlots.length > 0;
 
   async function submitAll() {
     if (!canSubmit) return;
@@ -208,11 +210,15 @@ export default function MloFormMulti({
       form.append("y", String(yNum));
       form.append("image", slot.image);
 
+      const headers: Record<string, string> = {};
+      if (adminToken) {
+        headers.Authorization = `Bearer ${adminToken}`;
+      } else if (adminDevSecret) {
+        headers["X-Admin-Dev-Secret"] = adminDevSecret;
+      }
       const res = await fetch("/api/mlo", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-        },
+        headers,
         body: form,
       });
 

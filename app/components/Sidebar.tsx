@@ -25,6 +25,7 @@ type Props = {
   mlos: MLO[];
   onRefresh: () => void;
   adminToken?: string;
+  adminDevSecret?: string;
   selectedId?: string | null;
   viewCounts?: Record<string, number>;
   /** URL to navigate to when user clicks back from MLO detail page */
@@ -37,6 +38,7 @@ export default function Sidebar({
   mlos,
   onRefresh,
   adminToken,
+  adminDevSecret,
   selectedId,
   viewCounts = {},
   returnTo = "/map",
@@ -46,13 +48,20 @@ export default function Sidebar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<MLO | null>(null);
 
+  const hasAuth = Boolean(adminToken) || Boolean(adminDevSecret);
+  const authHeaders = (): Record<string, string> => {
+    if (adminToken) return { Authorization: `Bearer ${adminToken}` };
+    if (adminDevSecret) return { "X-Admin-Dev-Secret": adminDevSecret };
+    return {};
+  };
+
   async function saveEdits() {
-    if (!draft || !adminToken) return;
+    if (!draft || !hasAuth) return;
     const res = await fetch("/api/mlo", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${adminToken}`,
+        ...authHeaders(),
       },
       body: JSON.stringify({
         id: draft.id,
@@ -75,13 +84,11 @@ export default function Sidebar({
   }
 
   async function deleteMlo(id: string) {
-    if (!adminToken) return;
+    if (!hasAuth) return;
     if (!confirm("Delete this MLO?")) return;
     const res = await fetch(`/api/mlo?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${adminToken}`,
-      },
+      headers: authHeaders(),
     });
 
     if (res.ok) {
@@ -314,7 +321,7 @@ export default function Sidebar({
                 </div>
               </div>
 
-              {adminToken && (
+              {hasAuth && (
                 <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                   <button onClick={() => startEdit(mlo)}>
                     {t("sidebar.edit")}

@@ -96,6 +96,9 @@ function HomeContent() {
   /** Set to true when ready to show the Partners section on the homepage */
   const SHOW_PARTNERS_SECTION = true;
 
+  /** Set to true to show partners as a conveyor (one at a time, same speed as MLO conveyor). Off by default for now. */
+  const SHOW_PARTNERS_CONVEYOR = true;
+
   /** Set to true when ready to show the Reviews section on the homepage */
   const SHOW_REVIEWS_SECTION = false;
 
@@ -296,6 +299,16 @@ function HomeContent() {
     if (partnersCreatorsData.length > 0) return partnersCreatorsData;
     return partnersCreators;
   }, [partnersCreatorsData, partnersCreators]);
+
+  const partnerConveyorItems = useMemo(() => {
+    if (!displayedPartners.length) return [];
+    const items: typeof displayedPartners = [];
+    const targetCount = 25;
+    while (items.length < targetCount) {
+      for (const p of displayedPartners) items.push(p);
+    }
+    return items.slice(0, targetCount);
+  }, [displayedPartners]);
 
   const latestRequests = useMemo(() => {
     return [...requests].slice(0, 4);
@@ -813,6 +826,218 @@ function HomeContent() {
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {SHOW_PARTNERS_SECTION && (
+              <>
+                <div
+                  style={{
+                    border: "2px solid rgba(251, 191, 36, 0.7)",
+                    borderRadius: 18,
+                    padding: "20px 24px",
+                    background:
+                      "linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(245, 158, 11, 0.12))",
+                    boxShadow: "0 16px 40px rgba(251, 191, 36, 0.25), 0 0 60px rgba(251, 191, 36, 0.08)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 800,
+                      letterSpacing: 0.5,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        fontSize: 18,
+                        fontWeight: 800,
+                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(245, 158, 11, 0.35))",
+                        border: "1px solid rgba(251, 191, 36, 0.7)",
+                        color: "#fde68a",
+                        boxShadow: "0 0 16px rgba(251, 191, 36, 0.5)",
+                      }}
+                    >
+                      ★
+                    </span>
+                    {t("home.partners.label")}
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        fontSize: 18,
+                        fontWeight: 800,
+                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(245, 158, 11, 0.35))",
+                        border: "1px solid rgba(251, 191, 36, 0.7)",
+                        color: "#fde68a",
+                        boxShadow: "0 0 16px rgba(251, 191, 36, 0.5)",
+                      }}
+                    >
+                      ★
+                    </span>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    border: "2px solid rgba(251, 191, 36, 0.5)",
+                    borderRadius: 18,
+                    padding: 24,
+                    background: "#0d1324",
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  {displayedPartners.length > 0 ? (
+                    SHOW_PARTNERS_CONVEYOR ? (
+                      <div
+                        style={{
+                          position: "relative",
+                          width: "100%",
+                          overflow: "hidden",
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <div
+                          className="partner-conveyor-viewport"
+                          style={{
+                            width: 328,
+                            flexShrink: 0,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            className="partner-conveyor-track"
+                            style={{
+                              display: "flex",
+                              gap: 12,
+                              animation: `partnerConveyorScroll ${MLO_CONVEYOR_SPEED_SEC}s linear infinite`,
+                              width: "max-content",
+                            }}
+                          >
+                            {[...partnerConveyorItems, ...partnerConveyorItems].map((creator, idx) => (
+                              <a
+                                key={`${creator.creator_key}-${idx}`}
+                                href="/creators"
+                                className="partner-conveyor-card"
+                                style={{
+                                  flexShrink: 0,
+                                  width: 320,
+                                  border: "2px solid rgba(251, 191, 36, 0.5)",
+                                  borderRadius: 16,
+                                  overflow: "hidden",
+                                  backgroundColor: "#0f1528",
+                                  textDecoration: "none",
+                                  color: "inherit",
+                                  padding: 24,
+                                  boxSizing: "border-box",
+                                  display: "block",
+                                  boxShadow: "0 8px 24px rgba(251, 191, 36, 0.15)",
+                                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    minHeight: 140,
+                                  }}
+                                >
+                                  {creator.logo_url ? (
+                                    <img
+                                      src={creator.logo_url}
+                                      alt=""
+                                      loading="lazy"
+                                      style={{
+                                        maxWidth: `${creator.spotlight_logo_size}%`,
+                                        maxHeight: 96,
+                                        width: "auto",
+                                        height: "auto",
+                                        objectFit: "contain",
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  ) : (
+                                    <span style={{ fontWeight: 700, fontSize: 20 }}>{creator.displayName}</span>
+                                  )}
+                                </div>
+                                <div style={{ textAlign: "center", fontSize: 14, opacity: 0.9, marginTop: 8, fontWeight: 600 }}>
+                                  {t("home.partners.count", { count: creator.count })}
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {displayedPartners.map((creator) => (
+                          <a
+                            key={creator.creator_key}
+                            href="/creators"
+                            style={{
+                              display: "block",
+                              position: "relative",
+                              border: "1px solid rgba(251, 191, 36, 0.4)",
+                              borderRadius: 12,
+                              overflow: "hidden",
+                              minHeight: 80,
+                              backgroundColor: "#0f1528",
+                              textDecoration: "none",
+                              color: "inherit",
+                              padding: 12,
+                              boxSizing: "border-box",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                minHeight: 56,
+                              }}
+                            >
+                              {creator.logo_url ? (
+                                <img
+                                  src={creator.logo_url}
+                                  alt=""
+                                  loading="lazy"
+                                  style={{
+                                    maxWidth: `${creator.spotlight_logo_size}%`,
+                                    maxHeight: 48,
+                                    width: "auto",
+                                    height: "auto",
+                                    objectFit: "contain",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                              ) : (
+                                <span style={{ fontWeight: 700, fontSize: 14 }}>{creator.displayName}</span>
+                              )}
+                            </div>
+                            <div style={{ textAlign: "center", fontSize: 11, opacity: 0.85, marginTop: 4 }}>
+                              {t("home.partners.count", { count: creator.count })}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ opacity: 0.7, fontSize: 13 }}>
+                      {t("home.partners.empty")}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             <div
               style={{
                 border: "1px solid #c7ff4a",
@@ -942,132 +1167,6 @@ function HomeContent() {
                 </div>
               )}
             </div>
-
-            {SHOW_PARTNERS_SECTION && (
-              <>
-                <div
-                  style={{
-                    border: "1px solid rgba(251, 191, 36, 0.6)",
-                    borderRadius: 14,
-                    padding: 12,
-                    background:
-                      "linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.06))",
-                    boxShadow: "0 10px 24px rgba(251, 191, 36, 0.15)",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 800,
-                      letterSpacing: 0.4,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        padding: "1px 6px",
-                        borderRadius: 999,
-                        fontSize: 14,
-                        fontWeight: 800,
-                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.3))",
-                        border: "1px solid rgba(251, 191, 36, 0.6)",
-                        color: "#fde68a",
-                        boxShadow: "0 0 10px rgba(251, 191, 36, 0.4)",
-                      }}
-                    >
-                      ★
-                    </span>
-                    {t("home.partners.label")}
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        padding: "1px 6px",
-                        borderRadius: 999,
-                        fontSize: 14,
-                        fontWeight: 800,
-                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.3))",
-                        border: "1px solid rgba(251, 191, 36, 0.6)",
-                        color: "#fde68a",
-                        boxShadow: "0 0 10px rgba(251, 191, 36, 0.4)",
-                      }}
-                    >
-                      ★
-                    </span>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    border: "1px solid rgba(251, 191, 36, 0.5)",
-                    borderRadius: 14,
-                    padding: 12,
-                    background: "#10162b",
-                  }}
-                >
-                  {displayedPartners.length > 0 ? (
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {displayedPartners.map((creator) => (
-                        <a
-                          key={creator.creator_key}
-                          href="/creators"
-                          style={{
-                            display: "block",
-                            position: "relative",
-                            border: "1px solid rgba(251, 191, 36, 0.4)",
-                            borderRadius: 12,
-                            overflow: "hidden",
-                            minHeight: 80,
-                            backgroundColor: "#0f1528",
-                            textDecoration: "none",
-                            color: "inherit",
-                            padding: 12,
-                            boxSizing: "border-box",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              minHeight: 56,
-                            }}
-                          >
-                            {creator.logo_url ? (
-                              <img
-                                src={creator.logo_url}
-                                alt=""
-                                loading="lazy"
-                                style={{
-                                  maxWidth: `${creator.spotlight_logo_size}%`,
-                                  maxHeight: 48,
-                                  width: "auto",
-                                  height: "auto",
-                                  objectFit: "contain",
-                                  flexShrink: 0,
-                                }}
-                              />
-                            ) : (
-                              <span style={{ fontWeight: 700, fontSize: 14 }}>{creator.displayName}</span>
-                            )}
-                          </div>
-                          <div style={{ textAlign: "center", fontSize: 11, opacity: 0.85, marginTop: 4 }}>
-                            {t("home.partners.count", { count: creator.count })}
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ opacity: 0.7, fontSize: 13 }}>
-                      {t("home.partners.empty")}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
           </div>
         </div>
       </section>
@@ -1076,6 +1175,14 @@ function HomeContent() {
         @keyframes mloConveyorScroll {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
+        }
+        @keyframes partnerConveyorScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .partner-conveyor-card:hover {
+          transform: scale(1.02);
+          box-shadow: 0 12px 32px rgba(251, 191, 36, 0.25) !important;
         }
       `}</style>
 
