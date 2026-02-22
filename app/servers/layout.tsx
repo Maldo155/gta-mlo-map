@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 
+const BASE = "https://mlomesh.vercel.app";
+
 export const metadata: Metadata = {
   title: "FiveM Servers | MLOMesh",
   description:
-    "Find quality FiveM servers. Filter by economy type, RP style, whitelisted, no pay-to-win, and more. Discover servers with custom MLOs.",
+    "Browse FiveM RP servers for GTA V. Filter by economy, region, whitelisted, no pay-to-win. Find quality roleplay servers with custom MLOs. Free server directory.",
+  keywords: [
+    "FiveM servers",
+    "FiveM RP servers",
+    "GTA V roleplay",
+    "FiveM server list",
+    "FiveM whitelisted",
+    "FiveM no pay to win",
+    "FiveM MLO servers",
+  ],
   openGraph: {
     title: "FiveM Servers | MLOMesh",
     description:
@@ -19,10 +30,33 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://mlomesh.vercel.app/servers" },
 };
 
+const serversPageJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  name: "FiveM Servers | MLOMesh",
+  description: "Browse FiveM RP servers for GTA V. Filter by economy, region, whitelisted, no pay-to-win. Find quality roleplay servers.",
+  url: `${BASE}/servers`,
+  publisher: { "@type": "Organization", name: "MLOMesh", url: BASE },
+  mainEntity: {
+    "@type": "ItemList",
+    name: "FiveM Server Directory",
+    description: "List of FiveM roleplay servers for GTA V.",
+    url: `${BASE}/servers`,
+  },
+};
+
 export default function ServersLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serversPageJsonLd) }}
+      />
+      {children}
+    </>
+  );
 }

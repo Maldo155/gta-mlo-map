@@ -88,6 +88,23 @@ export default async function MloPage({
       ? `/map?creator=${encodeURIComponent(mlo.creator)}`
       : "/map";
 
+  const mloUrl = `${BASE}/mlo/${id}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `${name} - ${creator} | MLO | MLOMesh`,
+    description: `${name} by ${creator}. ${categoryLabel ? `${categoryLabel}. ` : ""}Browse FiveM MLOs on MLOMesh.`,
+    url: mloUrl,
+    image: mlo.image_url || `${BASE}/mlomesh-logo.png`,
+    publisher: { "@type": "Organization", name: "MLOMesh", url: BASE },
+    mainEntity: {
+      "@type": "CreativeWork",
+      name,
+      author: { "@type": "Person", name: creator },
+      ...(mlo.category && { genre: getCategoryLabel(mlo.category) }),
+    },
+  };
+
   return (
     <main
       className="home-root"
@@ -98,6 +115,7 @@ export default async function MloPage({
         overflow: "hidden",
       }}
     >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div
         aria-hidden="true"
         style={{

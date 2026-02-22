@@ -19,10 +19,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "MLOMesh – MLO Map & Discovery for GTA FiveM",
   description:
-    "Find and browse MLOs for GTA FiveM. Interactive MLO map, creator directory, and discovery hub. Submit your MLO, search by category, and connect with MLO creators.",
+    "MLOMesh – Find MLOs, FiveM servers, and creators for GTA V. Interactive MLO map, FiveM server directory, creator discovery. Browse, submit, and connect with the FiveM community.",
   keywords: [
     "MLO",
     "GTA FiveM",
+    "FiveM servers",
+    "FiveM RP servers",
     "MLO map",
     "FiveM MLO",
     "GTA MLO",
@@ -33,6 +35,9 @@ export const metadata: Metadata = {
     "interior MLO",
     "FiveM interiors",
     "map loader",
+    "FiveM server list",
+    "GTA V roleplay",
+    "FiveM roleplay",
   ],
   openGraph: {
     title: "MLOMesh – MLO Map & Discovery for GTA FiveM",
@@ -77,18 +82,28 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "MLOMesh",
-              description: "MLO Map & Discovery for GTA FiveM. Interactive map, creator directory, and discovery hub.",
-              url: "https://mlomesh.vercel.app",
-              potentialAction: {
-                "@type": "SearchAction",
-                target: "https://mlomesh.vercel.app/map",
-                "query-input": "required name=search_term_string",
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "MLOMesh",
+                description: "MLO map, FiveM server directory, and creator discovery for GTA V FiveM. Find MLOs, browse servers, discover creators.",
+                url: "https://mlomesh.vercel.app",
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: "https://mlomesh.vercel.app/map",
+                  "query-input": "required name=search_term_string",
+                },
               },
-            }),
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "MLOMesh",
+                url: "https://mlomesh.vercel.app",
+                logo: "https://mlomesh.vercel.app/mlomesh-logo.png",
+                description: "MLO discovery hub and FiveM server directory for GTA V.",
+              },
+            ]),
           }}
         />
         <link

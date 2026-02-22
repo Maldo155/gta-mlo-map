@@ -56,6 +56,7 @@ export default function EditServerPage() {
   const [noPayToWin, setNoPayToWin] = useState(false);
   const [controllerFriendly, setControllerFriendly] = useState(false);
   const [newPlayerFriendly, setNewPlayerFriendly] = useState(true);
+  const [featuresOther, setFeaturesOther] = useState("");
   const [avgPlayers, setAvgPlayers] = useState("");
   const [maxSlots, setMaxSlots] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
@@ -116,6 +117,7 @@ export default function EditServerPage() {
         setNoPayToWin(s.no_pay_to_win ?? false);
         setControllerFriendly(s.controller_friendly ?? false);
         setNewPlayerFriendly(s.new_player_friendly !== false);
+        setFeaturesOther(s.features_other || "");
         setAvgPlayers(s.avg_player_count != null ? String(s.avg_player_count) : "");
         setMaxSlots(s.max_slots != null ? String(s.max_slots) : "");
         setBannerUrl(s.banner_url || "");
@@ -197,6 +199,7 @@ export default function EditServerPage() {
       no_pay_to_win: noPayToWin,
       controller_friendly: controllerFriendly,
       new_player_friendly: newPlayerFriendly,
+      features_other: featuresOther.trim() || null,
       avg_player_count: avgPlayers ? parseInt(avgPlayers, 10) : null,
       max_slots: maxSlots ? parseInt(maxSlots, 10) : null,
       banner_url: bannerUrl.trim() || null,
@@ -368,7 +371,7 @@ export default function EditServerPage() {
                   <label style={labelStyle}>Description *</label>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell players what makes your server unique..." rows={4} required style={{ ...inputStyle, maxWidth: "100%" }} />
                 </div>
-                <div style={{ ...sectionBoxStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="servers-form-row" style={{ ...sectionBoxStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
                     <label style={labelStyle}>Region</label>
                     <select value={region} onChange={(e) => setRegion(e.target.value)} style={inputStyle}>
@@ -433,7 +436,7 @@ export default function EditServerPage() {
                 </div>
                 <div style={{ ...sectionBoxStyle, display: "flex", flexDirection: "column", gap: 12 }}>
                   <label style={labelStyle}>Server stats</label>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="servers-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12 }}>Avg players</label>
                       <input type="number" min={0} value={avgPlayers} onChange={(e) => setAvgPlayers(e.target.value)} placeholder="32" style={inputStyle} />
@@ -443,7 +446,7 @@ export default function EditServerPage() {
                       <input type="number" min={0} value={maxSlots} onChange={(e) => setMaxSlots(e.target.value)} placeholder="64" style={inputStyle} />
                     </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="servers-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12 }}>Custom MLO count</label>
                       <input type="number" min={0} value={customMloCount} onChange={(e) => setCustomMloCount(e.target.value)} placeholder="50" style={inputStyle} />
@@ -460,7 +463,7 @@ export default function EditServerPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Server features</label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8, ...sectionBoxStyle }}>
+                  <div className="servers-features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8, ...sectionBoxStyle }}>
                     {[
                       { checked: whitelisted, set: setWhitelisted, label: "Whitelisted" },
                       { checked: noPayToWin, set: setNoPayToWin, label: "No Pay-to-Win" },
@@ -474,6 +477,9 @@ export default function EditServerPage() {
                         {label}
                       </label>
                     ))}
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <input type="text" value={featuresOther} onChange={(e) => setFeaturesOther(e.target.value)} placeholder="Other features (e.g., Gang RP, Heists, etc.)" style={inputStyle} />
+                    </div>
                   </div>
                 </div>
                 {errorMessage && <div style={{ padding: 12, background: "rgba(239, 68, 68, 0.2)", borderRadius: 8, color: "#ef4444" }}>{errorMessage}</div>}

@@ -35,7 +35,9 @@ export async function GET(
     );
   }
 
-  return NextResponse.json({ server: data });
+  const res = NextResponse.json({ server: data });
+  res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  return res;
 }
 
 export async function DELETE(
@@ -178,6 +180,7 @@ export async function PATCH(
     no_pay_to_win: Boolean(body.no_pay_to_win),
     controller_friendly: Boolean(body.controller_friendly),
     new_player_friendly: body.new_player_friendly !== false,
+    features_other: typeof body.features_other === "string" ? body.features_other.trim() || null : null,
     creator_keys: creatorKeys.length > 0 ? creatorKeys : null,
     cfx_id: cfxId,
     banner_url: body.banner_url?.trim() || null,

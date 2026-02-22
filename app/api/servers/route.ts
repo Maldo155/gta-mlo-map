@@ -153,6 +153,7 @@ export async function POST(req: Request) {
     no_pay_to_win: Boolean(body.no_pay_to_win),
     controller_friendly: Boolean(body.controller_friendly),
     new_player_friendly: body.new_player_friendly !== false,
+    features_other: typeof body.features_other === "string" ? body.features_other.trim() || null : null,
     mlo_ids: mloIds,
     creator_keys: creatorKeys.length > 0 ? creatorKeys : null,
     cfx_id: cfxId,

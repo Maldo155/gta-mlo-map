@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import AuthLink from "@/app/components/AuthLink";
 import DiscordLink from "@/app/components/DiscordLink";
 import LanguageSelect from "@/app/components/LanguageSelect";
@@ -14,6 +16,7 @@ import {
 } from "@/app/lib/serverTags";
 import LivePlayerCount from "@/app/components/LivePlayerCount";
 import ServerDetailActions from "@/app/components/ServerDetailActions";
+import ServerBadges from "@/app/components/ServerBadges";
 
 const BASE = "https://mlomesh.vercel.app";
 
@@ -103,6 +106,23 @@ export default async function ServerPage({
   const creatorKeys = Array.isArray(server.creator_keys) ? server.creator_keys : [];
   const creatorLabels = creatorKeys.map((k) => creatorKeyToLabel.get(k) || k).filter(Boolean);
 
+  const serverUrl = `${BASE}/servers/${server.id}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `${server.server_name} | FiveM Server | MLOMesh`,
+    description: (server.description || "").slice(0, 200) || `${server.server_name} - FiveM roleplay server on MLOMesh.`,
+    url: serverUrl,
+    image: server.banner_url || server.thumbnail_url || server.logo_url || `${BASE}/mlomesh-logo.png`,
+    publisher: { "@type": "Organization", name: "MLOMesh", url: BASE },
+    mainEntity: {
+      "@type": "Product",
+      name: server.server_name,
+      description: server.description?.slice(0, 300) || `${server.server_name} - FiveM RP server.`,
+      image: server.banner_url || server.logo_url,
+    },
+  };
+
   return (
     <main
       className="home-root"
@@ -113,6 +133,7 @@ export default async function ServerPage({
         overflow: "hidden",
       }}
     >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div
         aria-hidden="true"
         style={{
@@ -190,8 +211,10 @@ export default async function ServerPage({
             borderRadius: 16,
             border: "1px solid rgba(31, 41, 55, 0.8)",
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+            position: "relative",
           }}
         >
+          <ServerBadges ogServer={server.og_server} verified={server.verified} />
           <a
             href="/servers"
             style={{
@@ -250,14 +273,6 @@ export default async function ServerPage({
               }}
             >
               {server.server_name}
-              {server.verified && (
-                <span
-                  title="Verified"
-                  style={{ marginLeft: 8, color: "#3b82f6" }}
-                >
-                  ✓
-                </span>
-              )}
             </h1>
           </div>
 
@@ -400,6 +415,19 @@ export default async function ServerPage({
                 }}
               >
                 New player friendly
+              </span>
+            )}
+            {server.features_other && (
+              <span
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  background: "rgba(99, 102, 241, 0.2)",
+                  color: "#818cf8",
+                  fontSize: 13,
+                }}
+              >
+                {server.features_other}
               </span>
             )}
             {creatorLabels.map((lbl) => (

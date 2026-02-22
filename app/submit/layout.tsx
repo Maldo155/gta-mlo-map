@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Submit Your MLO | MLOMesh",
   description:
-    "Submit your MLO to MLOMesh. Get your GTA FiveM MLO discovered by players and server owners. Free MLO submission.",
+    "Submit your MLO to MLOMesh. Get your GTA FiveM MLO discovered by players and server owners. Free MLO submission. List your server too.",
+  keywords: ["submit MLO", "FiveM MLO submission", "add MLO", "list FiveM server", "MLOMesh submit"],
   openGraph: {
     title: "Submit Your MLO | MLOMesh",
     description: "Submit your MLO to MLOMesh. Get your FiveM MLO discovered.",

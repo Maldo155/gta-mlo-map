@@ -1479,6 +1479,23 @@ export default function AdminPage() {
     }
   }
 
+  async function updateServerBadges(id: string, verified?: boolean, ogServer?: boolean) {
+    const body: Record<string, boolean> = {};
+    if (verified !== undefined) body.verified = verified;
+    if (ogServer !== undefined) body.og_server = ogServer;
+    const res = await fetch(`/api/admin/servers/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok) {
+      loadServers();
+    } else {
+      alert(json.error || "Update failed.");
+    }
+  }
+
 
 
   // ----------------------------
@@ -3073,7 +3090,7 @@ export default function AdminPage() {
         </div>
         {showServers && (
           <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-            Manage FiveM servers listed on /servers. Delete spam or inappropriate listings.
+            Manage FiveM servers. OG badge: {servers.filter((s: any) => s.og_server).length}/20. Verified: trust badge. Delete spam.
           </div>
         )}
         {showServers && (
@@ -3156,6 +3173,26 @@ export default function AdminPage() {
                           {s.connect_url}
                         </div>
                       )}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={s.og_server === true}
+                          onChange={(e) => updateServerBadges(s.id, undefined, e.target.checked)}
+                          style={{ width: 14, height: 14 }}
+                        />
+                        <span title="OG (max 20)">OG</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={s.verified === true}
+                          onChange={(e) => updateServerBadges(s.id, e.target.checked, undefined)}
+                          style={{ width: 14, height: 14 }}
+                        />
+                        <span>Verified</span>
+                      </label>
                     </div>
                     <button
                       onClick={() => deleteServer(s.id)}

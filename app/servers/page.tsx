@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import ServersContent from "./ServersContent";
 
+export const dynamic = "force-dynamic";
+
 export default function ServersPage() {
   return (
     <Suspense

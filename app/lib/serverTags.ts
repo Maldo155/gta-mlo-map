@@ -13,7 +13,7 @@ export const ECONOMY_TYPES = [
   { key: "realistic", label: "Realistic" },
   { key: "boosted", label: "Boosted" },
   { key: "hardcore", label: "Hardcore" },
-  { key: "vmenu", label: "Vmenu" },
+  { key: "vmenu", label: "vMenu" },
   { key: "custom", label: "Custom" },
 ] as const;
 
@@ -113,9 +113,11 @@ export type Server = {
   no_pay_to_win?: boolean | null;
   controller_friendly?: boolean | null;
   new_player_friendly?: boolean | null;
+  features_other?: string | null;
   mlo_ids?: string[] | null;
   creator_keys?: string[] | null;
   verified?: boolean | null;
+  og_server?: boolean | null;
   featured?: boolean | null;
   featured_order?: number | null;
   banner_url?: string | null;

@@ -1,4 +1,4 @@
--- Add Vmenu to economy_type options
+-- Add vMenu to economy_type options
 -- Run in Supabase SQL editor
 
 alter table public.servers drop constraint if exists servers_economy_type_check;

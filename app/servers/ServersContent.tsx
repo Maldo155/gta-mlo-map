@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import AuthLink from "../components/AuthLink";
 import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
+import ServerBadges from "../components/ServerBadges";
 import { useLanguage } from "../components/LanguageProvider";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
 import type { Server } from "../lib/serverTags";
@@ -59,10 +60,11 @@ export default function ServersContent() {
   const [filterRegion, setFilterRegion] = useState<string>("");
   const [filterEconomy, setFilterEconomy] = useState<string>("");
   const [filterRp, setFilterRp] = useState<string>("");
-  const [filterWhitelisted, setFilterWhitelisted] = useState<boolean | null>(
-    null
-  );
+  const [filterWhitelisted, setFilterWhitelisted] = useState<boolean | null>(null);
   const [filterNoP2W, setFilterNoP2W] = useState(false);
+  const [filterPdActive, setFilterPdActive] = useState(false);
+  const [filterEmsActive, setFilterEmsActive] = useState(false);
+  const [filterControllerFriendly, setFilterControllerFriendly] = useState(false);
   const [filterNewPlayerFriendly, setFilterNewPlayerFriendly] = useState(false);
   const [filterLookingFor, setFilterLookingFor] = useState<Set<string>>(new Set());
   const [liveCounts, setLiveCounts] = useState<Record<string, { players: number; max: number }>>({});
@@ -180,6 +182,10 @@ export default function ServersContent() {
       const matchWhitelisted =
         filterWhitelisted === null || s.whitelisted === filterWhitelisted;
       const matchNoP2W = !filterNoP2W || s.no_pay_to_win === true;
+      const matchPdActive = !filterPdActive || s.pd_active === true;
+      const matchEmsActive = !filterEmsActive || s.ems_active === true;
+      const matchController =
+        !filterControllerFriendly || s.controller_friendly === true;
       const matchNewPlayer =
         !filterNewPlayerFriendly || s.new_player_friendly === true;
       const serverTypes = (s.looking_for_types || []) as string[];
@@ -200,6 +206,9 @@ export default function ServersContent() {
         matchRp &&
         matchWhitelisted &&
         matchNoP2W &&
+        matchPdActive &&
+        matchEmsActive &&
+        matchController &&
         matchNewPlayer &&
         matchLookingFor
       );
@@ -212,6 +221,9 @@ export default function ServersContent() {
     filterRp,
     filterWhitelisted,
     filterNoP2W,
+    filterPdActive,
+    filterEmsActive,
+    filterControllerFriendly,
     filterNewPlayerFriendly,
     filterLookingFor,
   ]);
@@ -222,6 +234,9 @@ export default function ServersContent() {
     setFilterRp("");
     setFilterWhitelisted(null);
     setFilterNoP2W(false);
+    setFilterPdActive(false);
+    setFilterEmsActive(false);
+    setFilterControllerFriendly(false);
     setFilterNewPlayerFriendly(false);
     setFilterLookingFor(new Set());
     setSearch("");
@@ -280,6 +295,9 @@ export default function ServersContent() {
     filterRp ||
     filterWhitelisted !== null ||
     filterNoP2W ||
+    filterPdActive ||
+    filterEmsActive ||
+    filterControllerFriendly ||
     filterNewPlayerFriendly ||
     filterLookingFor.size > 0;
 
@@ -431,6 +449,7 @@ export default function ServersContent() {
               {t("servers.filters.locationStyle")}
             </div>
             <div
+              className="servers-location-selects"
               style={{
                 display: "flex",
                 flexWrap: "wrap",
@@ -497,7 +516,7 @@ export default function ServersContent() {
               </select>
             </div>
 
-            {/* Preferences */}
+            {/* Preferences - matches Server features layout */}
             <div
               style={{
                 fontSize: 12,
@@ -511,72 +530,73 @@ export default function ServersContent() {
               {t("servers.filters.preferences")}
             </div>
             <div
+              className="servers-preferences-grid"
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 12,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                gap: 8,
+                padding: 18,
+                background: "#14181f",
+                borderRadius: 10,
+                border: "1px solid rgba(55, 65, 81, 0.5)",
                 marginBottom: 20,
               }}
             >
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  userSelect: "none",
-                  color: "#e2e8f0",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={filterWhitelisted === true}
-                  onChange={(e) =>
-                    setFilterWhitelisted(e.target.checked ? true : null)
-                  }
-                  style={{ width: 16, height: 16, accentColor: "#22c55e", cursor: "pointer" }}
-                />
-                <span>{t("servers.filters.whitelisted")}</span>
-              </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  userSelect: "none",
-                  color: "#e2e8f0",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={filterNoP2W}
-                  onChange={(e) => setFilterNoP2W(e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#22c55e", cursor: "pointer" }}
-                />
-                <span>{t("servers.filters.noP2W")}</span>
-              </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  cursor: "pointer",
-                  fontSize: 13,
-                  userSelect: "none",
-                  color: "#e2e8f0",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={filterNewPlayerFriendly}
-                  onChange={(e) => setFilterNewPlayerFriendly(e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#22c55e", cursor: "pointer" }}
-                />
-                <span>{t("servers.filters.newPlayerFriendly")}</span>
-              </label>
+              {[
+                {
+                  checked: filterWhitelisted === true,
+                  set: (v: boolean) => setFilterWhitelisted(v ? true : null),
+                  label: t("servers.filters.whitelisted"),
+                },
+                {
+                  checked: filterNoP2W,
+                  set: setFilterNoP2W,
+                  label: t("servers.filters.noP2W"),
+                },
+                {
+                  checked: filterPdActive,
+                  set: setFilterPdActive,
+                  label: t("servers.filters.pdActive"),
+                },
+                {
+                  checked: filterEmsActive,
+                  set: setFilterEmsActive,
+                  label: t("servers.filters.emsActive"),
+                },
+                {
+                  checked: filterControllerFriendly,
+                  set: setFilterControllerFriendly,
+                  label: t("servers.filters.controllerFriendly"),
+                },
+                {
+                  checked: filterNewPlayerFriendly,
+                  set: setFilterNewPlayerFriendly,
+                  label: t("servers.filters.newPlayerFriendly"),
+                },
+              ].map(({ checked, set, label }) => (
+                <label
+                  key={label}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    cursor: "pointer",
+                    minHeight: 40,
+                    whiteSpace: "nowrap",
+                    fontSize: 13,
+                    userSelect: "none",
+                    color: "#e2e8f0",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => set(e.target.checked)}
+                    style={{ width: 18, height: 18, flexShrink: 0, accentColor: "#22c55e", cursor: "pointer" }}
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
 
             {/* I want to join/be */}
@@ -709,8 +729,13 @@ export default function ServersContent() {
                     flexDirection: "column",
                     gap: 0,
                     overflow: "hidden",
+                    position: "relative",
                   }}
                 >
+                  <ServerBadges ogServer={s.og_server} verified={s.verified} />
+                  {(s.og_server || s.verified) && !s.banner_url && (
+                    <div style={{ height: 42, minHeight: 42, flexShrink: 0 }} />
+                  )}
                   {s.banner_url && (
                     <a
                       href={`/servers/${s.id}`}
@@ -749,17 +774,6 @@ export default function ServersContent() {
                         {s.server_name}
                       </h2>
                     </div>
-                    {s.verified && (
-                      <span
-                        title="Verified"
-                        style={{
-                          color: "#3b82f6",
-                          fontSize: 14,
-                        }}
-                      >
-                        ✓
-                      </span>
-                    )}
                   </div>
                   {(s.region || s.rp_type || s.economy_type || (Array.isArray(s.criminal_types) && s.criminal_types.length > 0) || s.criminal_other || (Array.isArray(s.looking_for_types) && s.looking_for_types.length > 0) || s.looking_for_other || (Array.isArray(s.creator_keys) && s.creator_keys.length > 0)) && (
                     <div
@@ -1039,7 +1053,7 @@ export default function ServersContent() {
                       <span title={t("servers.views") ?? "Views"}>
                         👁 {(s.views ?? 0).toLocaleString()}
                       </span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span className="server-like-row" style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <button
                           type="button"
                           onClick={() => toggleLike(s.id)}
@@ -1048,8 +1062,14 @@ export default function ServersContent() {
                             background: "none",
                             border: "none",
                             cursor: "pointer",
-                            padding: 2,
+                            padding: 8,
+                            margin: -4,
                             opacity: likedServerIds.has(s.id) ? 1 : 0.6,
+                            minWidth: 44,
+                            minHeight: 44,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                           }}
                         >
                           {likedServerIds.has(s.id) ? "❤️" : "🤍"}
