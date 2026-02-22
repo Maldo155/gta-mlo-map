@@ -1,22 +1,38 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 
 /**
- * Client-side fallback for auth callback. Runs when server callback fails with PKCE error.
- * Browser has direct access to document.cookie where the verifier was stored.
+ * Client callback: exchange OAuth code for session.
+ * Strip code from URL immediately so Supabase detectSessionInUrl doesn't consume it first.
  */
 function ClientCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "error">("loading");
   const exchanged = useRef(false);
+  const captured = useRef<{ code: string; next: string } | null>(null);
+
+  // Run before paint: capture code and strip from URL so detectSessionInUrl doesn't race
+  useLayoutEffect(() => {
+    if (captured.current) return;
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    const code = params.get("code");
+    const next = params.get("next") || "/servers/submit";
+    if (code) {
+      captured.current = { code, next };
+      if (typeof window !== "undefined") {
+        const clean = next ? `?next=${encodeURIComponent(next)}` : "";
+        window.history.replaceState(null, "", window.location.pathname + clean);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const next = searchParams.get("next") || "/servers/submit";
+    const { code, next } = captured.current || { code: searchParams.get("code"), next: searchParams.get("next") || "/servers/submit" };
+    const nextPath = next || "/servers/submit";
 
     if (!code) {
       const params = new URLSearchParams({
@@ -53,7 +69,7 @@ function ClientCallbackContent() {
       });
       // Only auto-retry for PKCE (verifier missing). "Unable to exchange" means code was already used.
       if (errMsg.toLowerCase().includes("pkce")) params.set("auto_retry", "1");
-      if (next) params.set("next", next);
+      if (nextPath) params.set("next", nextPath);
       return `/login?${params.toString()}`;
     };
 
@@ -64,8 +80,7 @@ function ClientCallbackContent() {
           setStatus("error");
           router.replace(buildErrorUrl(error.message));
         } else {
-          // Full page redirect so destination gets fresh session from cookies
-          window.location.replace(next.startsWith("/") ? next : "/servers/submit");
+          window.location.replace(nextPath.startsWith("/") ? nextPath : "/servers/submit");
         }
       })
       .catch((err) => {

@@ -10,5 +10,7 @@ export function createClient() {
     throw new Error("Supabase env vars are missing.");
   }
 
-  return createBrowserClient(url, key);
+  return createBrowserClient(url, key, {
+    cookieOptions: { sameSite: "lax" as const },
+  });
 }
