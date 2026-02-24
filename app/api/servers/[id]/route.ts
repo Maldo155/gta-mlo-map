@@ -93,7 +93,7 @@ export async function PATCH(
 
   const { data: existing, error: fetchError } = await getSupabaseAdmin()
     .from("servers")
-    .select("id, user_id")
+    .select("id, user_id, claimed_by_user_id, authorized_editors")
     .eq("id", id)
     .single();
 
@@ -104,7 +104,19 @@ export async function PATCH(
     );
   }
 
-  if (existing.user_id !== userData.user.id) {
+  const isOwner = existing.user_id === userData.user.id;
+  const isClaimedOwner = existing.claimed_by_user_id === userData.user.id;
+
+  const editors = (existing as { authorized_editors?: string[] | null }).authorized_editors ?? [];
+  const discordUsername = (
+    (userData.user.user_metadata as Record<string, unknown>)?.user_name
+    ?? (userData.user.user_metadata as Record<string, unknown>)?.username
+    ?? (userData.user.user_metadata as Record<string, unknown>)?.full_name
+  );
+  const userHandle = typeof discordUsername === "string" ? discordUsername.trim().toLowerCase() : "";
+  const isAuthorizedEditor = userHandle && editors.some((e) => String(e).trim().toLowerCase() === userHandle);
+
+  if (!isOwner && !isClaimedOwner && !isAuthorizedEditor) {
     return NextResponse.json(
       { error: "You can only edit servers you added or are authorized to edit." },
       { status: 403 }

@@ -1,12 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import {
   DndContext,
   closestCenter,
+  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
+  defaultDropAnimationSideEffects,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -36,17 +40,26 @@ function SortableThumb({ id, url, index, onRemove }: { id: string; url: string; 
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({
+    id,
+    transition: { duration: 200, easing: "cubic-bezier(0.25, 1, 0.5, 1)" },
+  });
 
   const style: CSSProperties = {
     position: "relative",
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.7 : 1,
+    opacity: isDragging ? 0.3 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="gallery-sortable-thumb">
+    <div
+      ref={setNodeRef}
+      style={{ ...style, cursor: isDragging ? "grabbing" : "grab" }}
+      className="gallery-sortable-thumb"
+      {...attributes}
+      {...listeners}
+    >
       <img
         src={url}
         alt=""
@@ -57,12 +70,10 @@ function SortableThumb({ id, url, index, onRemove }: { id: string; url: string; 
           borderRadius: 8,
           border: "1px solid #374151",
           display: "block",
+          pointerEvents: "none",
         }}
       />
       <div
-        {...attributes}
-        {...listeners}
-        className="gallery-sortable-drag-handle"
         style={{
           position: "absolute",
           bottom: 4,
@@ -72,22 +83,21 @@ function SortableThumb({ id, url, index, onRemove }: { id: string; url: string; 
           borderRadius: 4,
           background: "rgba(0,0,0,0.6)",
           color: "#fff",
-          cursor: "grab",
+          pointerEvents: "none",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           fontSize: 12,
           lineHeight: 1,
-          userSelect: "none",
         }}
-        title="Drag to reorder"
-        aria-label="Drag to reorder"
+        aria-hidden
       >
         ⋮⋮
       </div>
       <button
         type="button"
         className="gallery-sortable-remove"
+        onPointerDown={(ev) => ev.stopPropagation()}
         onClick={(ev) => {
           ev.stopPropagation();
           onRemove(index);
@@ -118,6 +128,41 @@ function SortableThumb({ id, url, index, onRemove }: { id: string; url: string; 
   );
 }
 
+const dropAnimation = {
+  duration: 200,
+  easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: "0",
+        transition: "opacity 200ms cubic-bezier(0.25, 1, 0.5, 1)",
+      },
+    },
+  }),
+};
+
+function OverlayThumb({ url }: { url: string }) {
+  return (
+    <div
+      style={{
+        width: 80,
+        height: 60,
+        borderRadius: 8,
+        overflow: "hidden",
+        border: "2px solid #6366f1",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+        cursor: "grabbing",
+      }}
+    >
+      <img
+        src={url}
+        alt=""
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
+      />
+    </div>
+  );
+}
+
 export default function GallerySortable({
   items,
   onReorder,
@@ -128,14 +173,21 @@ export default function GallerySortable({
   onDragLeave,
   onDrop,
 }: Props) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 3 },
+      activationConstraint: { distance: 5 },
     })
   );
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    setActiveId(null);
     if (over && active.id !== over.id) {
       const oldIndex = parseInt(String(active.id).replace("item-", ""), 10);
       const newIndex = parseInt(String(over.id).replace("item-", ""), 10);
@@ -146,6 +198,8 @@ export default function GallerySortable({
   }
 
   const itemIds = items.map((_, i) => `item-${i}`);
+  const activeIndex = activeId != null ? parseInt(activeId.replace("item-", ""), 10) : null;
+  const activeUrl = activeIndex != null && activeIndex >= 0 && activeIndex < items.length ? items[activeIndex] : null;
 
   return (
     <div
@@ -165,7 +219,12 @@ export default function GallerySortable({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <SortableContext items={itemIds} strategy={rectSortingStrategy}>
           {items.map((url, i) => (
             <SortableThumb
@@ -177,6 +236,9 @@ export default function GallerySortable({
             />
           ))}
         </SortableContext>
+        <DragOverlay dropAnimation={dropAnimation}>
+          {activeUrl ? <OverlayThumb url={activeUrl} /> : null}
+        </DragOverlay>
       </DndContext>
       {renderAddButton}
     </div>

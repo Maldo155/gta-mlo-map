@@ -3215,8 +3215,13 @@ export default function AdminPage() {
                 <div style={{ fontWeight: 600 }}>{fivemPreview.hostname}</div>
                 <div style={{ opacity: 0.8 }}>Type: {fivemPreview.gametype || "(none)"} • Players: {fivemPreview.players}/{fivemPreview.max_players || "?"}</div>
                 {fivemPreview.discord && <div style={{ opacity: 0.8 }}>Discord from FiveM: {fivemPreview.discord}</div>}
+                {!fivemPreview.discord && (
+                  <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: 6, color: "#fca5a5", fontSize: 12 }}>
+                    We could not find this server&apos;s Discord. Please add it manually below.
+                  </div>
+                )}
                 <div style={{ marginTop: 8 }}>
-                  <label style={{ display: "block", marginBottom: 4, fontSize: 11, color: "#94a3b8" }}>Discord (add manually if not listed)</label>
+                  <label style={{ display: "block", marginBottom: 4, fontSize: 11, color: "#94a3b8" }}>Discord {!fivemPreview.discord ? "(required — add manually)" : "(add manually if not listed)"}</label>
                   <input
                     placeholder="discord.gg/xxx or https://..."
                     value={fivemManualDiscord}

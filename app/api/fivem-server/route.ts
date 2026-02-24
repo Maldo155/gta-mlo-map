@@ -35,13 +35,19 @@ export async function GET(req: Request) {
     const json = await res.json();
     const d = json.Data ?? json;
 
-    // Extract Discord from vars (e.g. "dc.gg/edot" or full URL)
+    // Extract Discord from vars - check multiple common keys
     const vars = d.vars ?? {};
-    let discordUrl = typeof vars.discord === "string" ? vars.discord.trim() : "";
+    let discordUrl =
+      typeof vars.discord === "string" ? vars.discord.trim() :
+      typeof vars.Discord === "string" ? vars.Discord.trim() :
+      typeof vars.dc === "string" ? vars.dc.trim() :
+      typeof vars.discordInvite === "string" ? vars.discordInvite.trim() :
+      typeof vars.sv_discord === "string" ? vars.sv_discord.trim() :
+      "";
     if (discordUrl && !discordUrl.startsWith("http")) {
       discordUrl = discordUrl.includes("discord.gg")
         ? `https://${discordUrl}`
-        : `https://discord.gg/${discordUrl.replace(/^dc\.gg\/?/i, "").trim()}`;
+        : `https://discord.gg/${discordUrl.replace(/^(discord\.gg\/?|dc\.gg\/?)/i, "").trim()}`;
     }
 
     const hostname =

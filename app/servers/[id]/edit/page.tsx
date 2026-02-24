@@ -21,6 +21,38 @@ import GallerySortable from "@/app/components/GallerySortable";
 type FormState = "idle" | "sending" | "sent" | "error";
 type PageState = "loading" | "forbidden" | "notfound" | "ready";
 
+function EditPageLayout({ children, t }: { children: React.ReactNode; t: (key: string) => string }) {
+  return (
+    <main className="home-root" style={{ minHeight: "100vh", color: "white", position: "relative", overflow: "hidden" }}>
+      <div aria-hidden style={{ position: "fixed", inset: 0, background: "linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url(\"/api/home-bg\") no-repeat center top / cover", zIndex: 0, pointerEvents: "none" }} />
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div className="header-logo-float">
+          <img src="/mlomesh-logo.png" alt="MLOMesh" className="header-logo" />
+        </div>
+        <header className="site-header" style={{ padding: "12px 16px", backgroundColor: "#10162b", backgroundImage: "url('/header-bg.png')", backgroundSize: "cover", color: "white" }}>
+          <div className="header-top">
+            <div className="header-brand" />
+            <div className="header-actions">
+              <LanguageSelect />
+              <AuthLink />
+              <DiscordLink />
+            </div>
+          </div>
+          <nav className="header-nav">
+            <a href="/" className="header-link">{t("nav.home")}</a>
+            <a href="/map" className="header-link">{t("nav.map")}</a>
+            <a href="/about" className="header-link">{t("nav.about")}</a>
+            <a href="/creators" className="header-link header-link-creators">{t("nav.creators")}</a>
+            <a href="/servers" className="header-link header-link-servers">{t("nav.servers")}</a>
+            <a href="/submit" className="header-link">{t("nav.submit")}</a>
+          </nav>
+        </header>
+        {children}
+      </div>
+    </main>
+  );
+}
+
 export default function EditServerPage() {
   const router = useRouter();
   const params = useParams();
@@ -116,6 +148,7 @@ export default function EditServerPage() {
         setLookingForTypes(Array.isArray(s.looking_for_types) ? s.looking_for_types : []);
         setLookingForOther(s.looking_for_other || "");
         setCreatorKeys(Array.isArray(s.creator_keys) ? s.creator_keys : []);
+        setAuthorizedEditors(Array.isArray(s.authorized_editors) ? s.authorized_editors.join(", ") : "");
         setCfxId(s.cfx_id || "");
         setCivJobsCount(s.civ_jobs_count != null ? String(s.civ_jobs_count) : "");
         setCustomMloCount(s.custom_mlo_count != null ? String(s.custom_mlo_count) : "");
@@ -138,7 +171,11 @@ export default function EditServerPage() {
   useEffect(() => {
     if (pageState !== "ready" || !server) return;
     if (!session) return; // still loading session
-    const canEdit = server.user_id === session.user.id;
+    const discordUsername = (session.user.user_metadata as Record<string, unknown>)?.user_name ?? (session.user.user_metadata as Record<string, unknown>)?.username ?? (session.user.user_metadata as Record<string, unknown>)?.full_name;
+    const userHandle = typeof discordUsername === "string" ? discordUsername.trim().toLowerCase() : "";
+    const editors = (server.authorized_editors ?? []) as string[];
+    const isAuthorizedEditor = userHandle && editors.some((e) => String(e).trim().toLowerCase() === userHandle);
+    const canEdit = server.user_id === session.user.id || server.claimed_by_user_id === session.user.id || isAuthorizedEditor;
     if (!canEdit) {
       setPageState("forbidden");
     }
@@ -275,40 +312,8 @@ export default function EditServerPage() {
     border: "1px solid rgba(55, 65, 81, 0.5)",
   };
 
-  function PageLayout({ children }: { children: React.ReactNode }) {
-    return (
-      <main className="home-root" style={{ minHeight: "100vh", color: "white", position: "relative", overflow: "hidden" }}>
-        <div aria-hidden style={{ position: "fixed", inset: 0, background: "linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url(\"/api/home-bg\") no-repeat center top / cover", zIndex: 0, pointerEvents: "none" }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div className="header-logo-float">
-            <img src="/mlomesh-logo.png" alt="MLOMesh" className="header-logo" />
-          </div>
-          <header className="site-header" style={{ padding: "12px 16px", backgroundColor: "#10162b", backgroundImage: "url('/header-bg.png')", backgroundSize: "cover", color: "white" }}>
-            <div className="header-top">
-              <div className="header-brand" />
-              <div className="header-actions">
-                <LanguageSelect />
-                <AuthLink />
-                <DiscordLink />
-              </div>
-            </div>
-            <nav className="header-nav">
-              <a href="/" className="header-link">{t("nav.home")}</a>
-              <a href="/map" className="header-link">{t("nav.map")}</a>
-              <a href="/about" className="header-link">{t("nav.about")}</a>
-              <a href="/creators" className="header-link header-link-creators">{t("nav.creators")}</a>
-              <a href="/servers" className="header-link header-link-servers">{t("nav.servers")}</a>
-              <a href="/submit" className="header-link">{t("nav.submit")}</a>
-            </nav>
-          </header>
-          {children}
-        </div>
-      </main>
-    );
-  }
-
   if (pageState === "loading" || (pageState === "ready" && !session)) {
-    return <PageLayout><div style={{ padding: 80, textAlign: "center" }}><p>Loading…</p></div></PageLayout>;
+    return <EditPageLayout t={t}><div style={{ padding: 80, textAlign: "center" }}><p>Loading…</p></div></EditPageLayout>;
   }
 
   if (!session) {
@@ -318,28 +323,28 @@ export default function EditServerPage() {
 
   if (pageState === "notfound") {
     return (
-      <PageLayout>
+      <EditPageLayout t={t}>
         <div style={{ padding: 80, textAlign: "center" }}>
           <h1 style={{ fontSize: 24, marginBottom: 12 }}>Server not found</h1>
           <a href="/servers" style={{ color: "#60a5fa" }}>← Back to Servers</a>
         </div>
-      </PageLayout>
+      </EditPageLayout>
     );
   }
 
   if (pageState === "forbidden") {
     return (
-      <PageLayout>
+      <EditPageLayout t={t}>
         <div style={{ padding: 80, textAlign: "center" }}>
           <h1 style={{ fontSize: 24, marginBottom: 12 }}>You can only edit servers you added</h1>
           <a href={`/servers/${id}`} style={{ color: "#60a5fa" }}>← Back to Server</a>
         </div>
-      </PageLayout>
+      </EditPageLayout>
     );
   }
 
   return (
-    <PageLayout>
+    <EditPageLayout t={t}>
       <div style={{ position: "relative", zIndex: 1 }}>
         <div className="servers-submit-form" style={{ maxWidth: 560, margin: "0 auto", padding: "32px 24px 64px" }}>
           <div style={{ background: "rgba(15, 17, 22, 0.96)", borderRadius: 16, padding: "32px 28px 48px", border: "1px solid rgba(45, 55, 72, 0.8)", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)" }}>
@@ -382,6 +387,16 @@ export default function EditServerPage() {
                   <div style={{ marginTop: 12 }}>
                     <label style={labelStyle}>Website URL</label>
                     <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <label style={labelStyle}>Additional editors (Discord usernames)</label>
+                    <input
+                      value={authorizedEditors}
+                      onChange={(e) => setAuthorizedEditors(e.target.value)}
+                      placeholder="johndoe, server_admin, coowner (comma-separated)"
+                      style={inputStyle}
+                    />
+                    <span style={{ display: "block", fontSize: 12, opacity: 0.7, marginTop: 4 }}>People who can also edit this server listing.</span>
                   </div>
                 </div>
                 <div style={sectionBoxStyle}>
@@ -527,6 +542,16 @@ export default function EditServerPage() {
                     <span style={{ fontSize: 13, opacity: 0.7 }}>No creators listed yet.</span>
                   )}
                 </div>
+                <div style={sectionBoxStyle}>
+                  <label style={labelStyle}>Additional editors</label>
+                  <input
+                    value={authorizedEditors}
+                    onChange={(e) => setAuthorizedEditors(e.target.value)}
+                    placeholder="Discord usernames: johndoe, server_admin (comma-separated)"
+                    style={inputStyle}
+                  />
+                  <span style={{ fontSize: 12, opacity: 0.7, display: "block", marginTop: 6 }}>People who can also edit this server listing. Use their Discord usernames.</span>
+                </div>
                 <div style={{ ...sectionBoxStyle, display: "flex", flexDirection: "column", gap: 12 }}>
                   <label style={labelStyle}>Server stats</label>
                   <div className="servers-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -584,6 +609,6 @@ export default function EditServerPage() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    </EditPageLayout>
   );
 }

@@ -11,6 +11,8 @@ type Server = {
   discord_url?: string | null;
   website_url?: string | null;
   user_id?: string | null;
+  claimed_by_user_id?: string | null;
+  authorized_editors?: string[] | null;
   views?: number;
   like_count?: number;
 };
@@ -129,7 +131,7 @@ export default function ServerDetailActions({ server }: Props) {
             Website
           </a>
         )}
-        <EditServerButton serverId={server.id} serverUserId={server.user_id} />
+        <EditServerButton serverId={server.id} serverUserId={server.user_id} serverClaimedByUserId={server.claimed_by_user_id} serverAuthorizedEditors={server.authorized_editors} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 18, opacity: 0.95, justifyContent: "flex-start" }}>
           <span title="Views" style={{ display: "flex", alignItems: "center", gap: 8 }}>

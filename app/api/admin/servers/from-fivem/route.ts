@@ -33,7 +33,10 @@ export async function POST(req: Request) {
     const data = await res.json();
     const serverData = data?.Data ?? data;
     const vars = serverData?.vars ?? {};
-    const discordVar = vars.discord ?? vars.Discord ?? "";
+
+    const discordVar =
+      vars.discord ?? vars.Discord ?? vars.dc ?? vars.DC ??
+      vars.discord_invite ?? vars.discordInvite ?? vars.sv_discord ?? "";
 
     const hostname = (serverData?.hostname ?? "Unknown")
       .replace(/\^[0-9]/g, "")
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
       discordUrl = manualDiscord.startsWith("http") ? manualDiscord : `https://${manualDiscord}`;
     } else if (typeof discordVar === "string" && discordVar.trim()) {
       const d = discordVar.trim();
-      discordUrl = d.startsWith("http") ? d : `https://${d}`;
+      discordUrl = d.startsWith("http") || d.startsWith("https://") ? d : `https://discord.gg/${d.replace(/^(discord\.gg\/?|dc\.gg\/?)/i, "").trim()}`;
     }
 
     const connectUrl = `https://cfx.re/join/${code}`;

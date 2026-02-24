@@ -36,6 +36,19 @@ export async function POST(req: Request) {
     .single();
 
   if (fetchError || !server) {
+    const code = fetchError?.code;
+    const msg = fetchError?.message ?? "";
+    if (code === "PGRST116") {
+      return NextResponse.json({ error: "Server not found" }, { status: 404 });
+    }
+    if (msg.includes("column") && msg.includes("does not exist")) {
+      console.error("[Claim verify] Missing claim columns - run supabase/servers-claim-pin.sql:", msg);
+      return NextResponse.json(
+        { error: "Claim verification is not fully set up. Please contact support." },
+        { status: 500 }
+      );
+    }
+    console.error("[Claim verify] Server fetch error:", code, msg);
     return NextResponse.json({ error: "Server not found" }, { status: 404 });
   }
   if (server.claimed_by_user_id) {

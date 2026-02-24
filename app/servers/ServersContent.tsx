@@ -972,7 +972,14 @@ export default function ServersContent() {
                       >
                         {t("servers.viewDetails")}
                       </a>
-                      {session?.user?.id && s.user_id && session.user.id === s.user_id && (
+                      {(() => {
+                        const uid = session?.user?.id;
+                        if (!uid) return false;
+                        if (uid === s.user_id || uid === s.claimed_by_user_id) return true;
+                        const discordUsername = (session.user.user_metadata as Record<string, unknown>)?.user_name ?? (session.user.user_metadata as Record<string, unknown>)?.username ?? (session.user.user_metadata as Record<string, unknown>)?.full_name;
+                        const userHandle = typeof discordUsername === "string" ? discordUsername.trim().toLowerCase() : "";
+                        return userHandle && ((s as { authorized_editors?: string[] }).authorized_editors ?? []).some((e: string) => String(e).trim().toLowerCase() === userHandle);
+                      })() && (
                         <a
                           href={`/servers/${s.id}/edit`}
                           onClick={() => recordView(s.id)}

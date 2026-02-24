@@ -7,9 +7,11 @@ import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 type Props = {
   serverId: string;
   serverUserId: string | null | undefined;
+  serverClaimedByUserId?: string | null;
+  serverAuthorizedEditors?: string[] | null;
 };
 
-export default function EditServerButton({ serverId, serverUserId }: Props) {
+export default function EditServerButton({ serverId, serverUserId, serverClaimedByUserId, serverAuthorizedEditors }: Props) {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -20,8 +22,13 @@ export default function EditServerButton({ serverId, serverUserId }: Props) {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  const isOwner = session?.user?.id && serverUserId && session.user.id === serverUserId;
-  if (!isOwner) return null;
+  const uid = session?.user?.id;
+  const discordUsername = (session?.user?.user_metadata as Record<string, unknown>)?.user_name ?? (session?.user?.user_metadata as Record<string, unknown>)?.username ?? (session?.user?.user_metadata as Record<string, unknown>)?.full_name;
+  const userHandle = typeof discordUsername === "string" ? discordUsername.trim().toLowerCase() : "";
+  const editors = (serverAuthorizedEditors ?? []) as string[];
+  const isAuthorizedEditor = userHandle && editors.some((e) => String(e).trim().toLowerCase() === userHandle);
+  const canEdit = uid && (uid === serverUserId || uid === serverClaimedByUserId || isAuthorizedEditor);
+  if (!canEdit) return null;
 
   return (
     <a
