@@ -51,6 +51,20 @@ export async function POST(req: Request) {
 
     const connectUrl = `https://cfx.re/join/${code}`;
 
+    const { data: existing } = await getSupabaseAdmin()
+      .from("servers")
+      .select("id, server_name")
+      .or(`cfx_id.eq.${code},connect_url.ilike.%/join/${code}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `Server already in database: "${(existing as { server_name?: string }).server_name || "Unknown"}". Use the edit page to update.` },
+        { status: 400 }
+      );
+    }
+
     const payload = {
       server_name: hostname || `FiveM Server ${code}`,
       connect_url: connectUrl,

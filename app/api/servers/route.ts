@@ -120,6 +120,35 @@ export async function POST(req: Request) {
       : null;
   const cfxId = cfxIdExplicit || extractCfxId(connectUrl);
 
+  if (cfxId) {
+    const { data: existing } = await getSupabaseAdmin()
+      .from(TABLE)
+      .select("id, server_name")
+      .or(`cfx_id.eq.${cfxId},connect_url.ilike.%/join/${cfxId}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `This server is already listed as "${(existing as { server_name?: string }).server_name || "Unknown"}". You can claim it instead.` },
+        { status: 400 }
+      );
+    }
+  } else if (connectUrl) {
+    const { data: existing } = await getSupabaseAdmin()
+      .from(TABLE)
+      .select("id, server_name")
+      .eq("connect_url", connectUrl)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `This server is already listed as "${(existing as { server_name?: string }).server_name || "Unknown"}".` },
+        { status: 400 }
+      );
+    }
+  }
+
   const payload = {
     user_id: userData.user.id,
     claimed_by_user_id: userData.user.id,
