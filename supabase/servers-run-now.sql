@@ -8,3 +8,7 @@ create index if not exists servers_og_server_idx on public.servers(og_server) wh
 
 -- Features other (custom features text)
 alter table public.servers add column if not exists features_other text;
+
+-- Media for hybrid modal (video + gallery)
+alter table public.servers add column if not exists video_url text;
+alter table public.servers add column if not exists gallery_images jsonb default '[]'::jsonb;

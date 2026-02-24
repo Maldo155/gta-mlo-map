@@ -42,15 +42,16 @@ function HomeContent() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     if (code) {
-      const next = params.get("next") || "/servers/submit";
+      const next = params.get("next") || "/servers";
       window.location.replace(
-        `${window.location.origin}/auth/callback/client?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
+        `${window.location.origin}/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
       );
       return;
     }
   }, []);
 
   const [mlos, setMlos] = useState<Mlo[]>([]);
+  const [serversCount, setServersCount] = useState(0);
   const [banner, setBanner] = useState<{
     title: string | null;
     subtitle: string | null;
@@ -137,6 +138,12 @@ function HomeContent() {
     fetch("/api/mlo", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setMlos(d.mlos || []));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/servers", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setServersCount((d.servers || []).length));
   }, []);
 
   useEffect(() => {
@@ -400,8 +407,7 @@ function HomeContent() {
         style={{
           position: "fixed",
           inset: 0,
-          background:
-            '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+          background: `linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover`,
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -463,10 +469,10 @@ function HomeContent() {
           <a href="/about" className="header-link">
             {t("nav.about")}
           </a>
-          <a href="/creators" className="header-link">
+          <a href="/creators" className="header-link header-link-creators">
             {t("nav.creators")}
           </a>
-          <a href="/servers" className="header-link">
+          <a href="/servers" className="header-link header-link-servers">
             {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">
@@ -601,10 +607,14 @@ function HomeContent() {
               gap: 12,
               marginTop: 24,
               justifyContent: "center",
+              flexWrap: "wrap",
             }}
           >
             <a href="/submit">
               <button className="cta-submit">{t("home.hero.cta.submit")}</button>
+            </a>
+            <a href="/servers/submit">
+              <button className="cta-server">{t("home.hero.cta.server")}</button>
             </a>
           </div>
         </div>
@@ -651,6 +661,40 @@ function HomeContent() {
               </div>
               <div style={{ marginTop: 8, color: "#9ca3af", fontSize: 13 }}>
                 {t("home.tiles.map.desc")}
+              </div>
+            </div>
+          </a>
+          <a href="/servers" style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                border: "1px solid #243046",
+                borderRadius: 14,
+                padding: 18,
+                background: "rgba(16, 22, 43, 0.8)",
+                minHeight: 140,
+              }}
+              className="card"
+            >
+              <div
+                style={{
+                  height: 80,
+                  borderRadius: 10,
+                  backgroundImage: "url(/maps/find-servers-tile.png)",
+                  backgroundSize: "130%",
+                  backgroundPosition: "center center",
+                  marginBottom: 10,
+                  border: "1px solid #243046",
+                  opacity: 0.88,
+                }}
+              />
+              <div style={{ fontSize: 12, opacity: 0.7 }}>
+                {t("home.tiles.servers.title")}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginTop: 6 }}>
+                {t("home.tiles.servers.subtitle")} ({serversCount})
+              </div>
+              <div style={{ marginTop: 8, color: "#9ca3af", fontSize: 13 }}>
+                {t("home.tiles.servers.desc")}
               </div>
             </div>
           </a>

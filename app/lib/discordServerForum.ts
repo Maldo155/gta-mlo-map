@@ -172,17 +172,23 @@ export async function syncServerToDiscord(data: ServerForumData): Promise<{
 
 /**
  * Fetches server from DB and syncs to Discord. Call after insert/update.
+ * Only syncs claimed or grandfathered servers—unclaimed servers are not posted to #your-cities.
  */
 export async function syncServerToDiscordInBackground(serverId: string): Promise<void> {
   const { getSupabaseAdmin } = await import("@/app/lib/supabaseAdmin");
   const supabase = getSupabaseAdmin();
   const { data: server, error } = await supabase
     .from("servers")
-    .select("id, server_name, discord_url, website_url, description, connect_url, region, rp_type, economy_type, discord_thread_id, discord_message_id, banner_url, logo_url, thumbnail_url")
+    .select("id, server_name, discord_url, website_url, description, connect_url, region, rp_type, economy_type, discord_thread_id, discord_message_id, banner_url, logo_url, thumbnail_url, claimed_by_user_id, grandfathered")
     .eq("id", serverId)
     .single();
 
   if (error || !server) return;
+
+  const row = server as { claimed_by_user_id?: string | null; grandfathered?: boolean | null };
+  const isClaimed = !!row.claimed_by_user_id;
+  const isGrandfathered = !!row.grandfathered;
+  if (!isClaimed && !isGrandfathered) return;
 
   const result = await syncServerToDiscord({
     id: server.id,

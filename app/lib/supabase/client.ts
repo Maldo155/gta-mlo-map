@@ -11,6 +11,6 @@ export function createClient() {
   }
 
   return createBrowserClient(url, key, {
-    cookieOptions: { sameSite: "lax" as const },
+    cookieOptions: { sameSite: "lax" as const, path: "/" },
   });
 }

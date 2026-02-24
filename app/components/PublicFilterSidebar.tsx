@@ -72,6 +72,7 @@ function CreatorSelect({
       </button>
       {open && (
         <div
+          className="creator-select-dropdown"
           style={{
             position: "absolute",
             left: 0,
@@ -89,6 +90,7 @@ function CreatorSelect({
         >
           <button
             type="button"
+            className="creator-select-option"
             onClick={() => {
               onCreatorChange("");
               setOpen(false);
@@ -110,6 +112,7 @@ function CreatorSelect({
             <button
               key={opt.key}
               type="button"
+              className="creator-select-option"
               onClick={() => {
                 onCreatorChange(opt.key);
                 setOpen(false);
@@ -149,9 +152,12 @@ type Props = {
   onSearch?: (pt: { x: number; y: number }) => void;
   categoryCounts?: Record<string, number>;
   totalMlos?: number;
+  filteredCount?: number;
   selectedCreator?: string;
   onCreatorChange?: (creatorKey: string) => void;
   creatorOptions?: { key: string; label: string; count: number; partnership?: boolean }[];
+  /** When true, highlight the creator search box (e.g. during welcome popup) */
+  highlightCreatorSearch?: boolean;
 };
 
 export default function PublicFilterSidebar({
@@ -165,6 +171,7 @@ export default function PublicFilterSidebar({
   selectedCreator = "",
   onCreatorChange,
   creatorOptions = [],
+  highlightCreatorSearch = false,
 }: Props) {
   const { t } = useLanguage();
   const [collapsed, setCollapsed] = useState(false);
@@ -240,12 +247,14 @@ export default function PublicFilterSidebar({
       {/* CREATOR FILTER */}
       {creatorOptions.length > 0 && onCreatorChange && (
         <div
+          id="map-creator-search-highlight"
           style={{
             marginBottom: 12,
             padding: 10,
             borderRadius: 8,
-            border: "2px solid rgba(30,58,138,0.7)",
-            background: "rgba(59,130,246,0.08)",
+            border: highlightCreatorSearch ? "3px solid #ef4444" : "2px solid rgba(30,58,138,0.7)",
+            background: highlightCreatorSearch ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)",
+            boxShadow: highlightCreatorSearch ? "0 0 12px rgba(239,68,68,0.4)" : undefined,
           }}
         >
           <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 6 }}>
@@ -301,6 +310,7 @@ export default function PublicFilterSidebar({
               return (
                 <div
                   key={cat.key}
+                  className={`map-category-item${active ? " map-category-item-active" : ""}`}
                   onClick={() => toggleCategory?.(cat.key)}
                   style={{
                     cursor: toggleCategory ? "pointer" : "default",

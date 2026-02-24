@@ -28,7 +28,8 @@ export async function POST(req: Request) {
 
   const form = await req.formData();
   const file = form.get("file");
-  const type = String(form.get("type") || "logo"); // "logo" | "banner"
+  const rawType = String(form.get("type") || "logo");
+  const type = ["logo", "banner", "gallery"].includes(rawType) ? rawType : "logo";
 
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });

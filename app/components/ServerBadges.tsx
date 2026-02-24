@@ -2,7 +2,8 @@
 
 type Props = {
   ogServer?: boolean | null;
-  verified?: boolean | null;
+  verified?: boolean | null; // Also acts as claimed — claimed servers show Verified
+  position?: "top" | "bottom" | "inline";
 };
 
 const pillBase = {
@@ -17,17 +18,19 @@ const pillBase = {
   boxShadow: "0 0 12px currentColor",
 };
 
-export default function ServerBadges({ ogServer, verified }: Props) {
+export default function ServerBadges({ ogServer, verified, position = "top" }: Props) {
   if (!ogServer && !verified) return null;
 
+  const isAbsolute = position !== "inline";
   return (
     <div
       style={{
-        position: "absolute",
-        top: 10,
-        right: 10,
-        left: "auto",
-        zIndex: 10,
+        ...(isAbsolute && {
+          position: "absolute",
+          ...(position === "bottom" ? { bottom: 10, right: 10 } : { top: 10, right: 10 }),
+          left: "auto",
+          zIndex: 10,
+        }),
         display: "flex",
         flexDirection: "row",
         gap: 8,

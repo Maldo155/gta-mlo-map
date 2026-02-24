@@ -122,6 +122,7 @@ export async function POST(req: Request) {
 
   const payload = {
     user_id: userData.user.id,
+    claimed_by_user_id: userData.user.id,
     server_name: serverName,
     owner_name: body.owner_name?.trim() || null,
     region,
@@ -156,10 +157,16 @@ export async function POST(req: Request) {
     features_other: typeof body.features_other === "string" ? body.features_other.trim() || null : null,
     mlo_ids: mloIds,
     creator_keys: creatorKeys.length > 0 ? creatorKeys : null,
+    authorized_editors:
+      Array.isArray(body.authorized_editors) && body.authorized_editors.length > 0
+        ? body.authorized_editors.filter((u: unknown) => typeof u === "string" && String(u).trim()).map((u: string) => String(u).trim())
+        : null,
     cfx_id: cfxId,
     banner_url: body.banner_url?.trim() || null,
     thumbnail_url: body.thumbnail_url?.trim() || null,
     logo_url: body.logo_url?.trim() || null,
+    video_url: typeof body.video_url === "string" ? body.video_url.trim() || null : null,
+    gallery_images: Array.isArray(body.gallery_images) ? body.gallery_images.filter((u: unknown): u is string => typeof u === "string" && u.trim().length > 0).slice(0, 10) : null,
   };
 
   const { data, error } = await getSupabaseAdmin()

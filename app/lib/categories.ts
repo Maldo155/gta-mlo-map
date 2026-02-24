@@ -1,4 +1,4 @@
-export const CATEGORIES = [
+const CATEGORIES_RAW = [
   { key: "airport", label: "Airport", icon: "✈️" },
   { key: "weapon_store", label: "Ammunation/Weapon Store", icon: "🔫" },
   { key: "bank", label: "Bank", icon: "🏦" },
@@ -35,6 +35,7 @@ export const CATEGORIES = [
   { key: "island", label: "Island", icon: "🏝️" },
   { key: "jewelry_store", label: "Jewelry Store", icon: "💎" },
   { key: "laundromat", label: "Laundromat", icon: "🧺" },
+  { key: "lawyer", label: "Lawyer", icon: "📄", iconImage: "/icons/document.svg" },
   { key: "mall", label: "Mall", icon: "🏬" },
   { key: "map", label: "Map", icon: "🗺️" },
   { key: "mechanic", label: "Mechanic Shop", icon: "🛠️" },
@@ -51,9 +52,15 @@ export const CATEGORIES = [
   { key: "store", label: "Store", icon: "🛍️" },
   { key: "tattoo", label: "Tattoo Shop", icon: "🖋️" },
   { key: "theater", label: "Theater", icon: "🎪" },
+  { key: "training", label: "Training", icon: "🛡️", iconImage: "/icons/shield-check.svg" },
   { key: "train_station", label: "Train Station", icon: "🚂" },
+  { key: "vineyard", label: "Vineyard", icon: "🍇", iconImage: "/icons/vineyard.svg" },
   { key: "visitor_center", label: "Visitor Center", icon: "ℹ️" },
   { key: "weed_shop", label: "Weed Shop", icon: "🍃", iconImage: "/icons/weed-leaf.png" },
 ] as const;
 
-export type CategoryKey = (typeof CATEGORIES)[number]["key"];
+export const CATEGORIES: readonly (typeof CATEGORIES_RAW)[number][] = [...CATEGORIES_RAW].sort((a, b) =>
+  a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
+);
+
+export type CategoryKey = (typeof CATEGORIES_RAW)[number]["key"];

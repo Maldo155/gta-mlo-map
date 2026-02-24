@@ -106,7 +106,7 @@ export async function PATCH(
 
   if (existing.user_id !== userData.user.id) {
     return NextResponse.json(
-      { error: "You can only edit servers you added." },
+      { error: "You can only edit servers you added or are authorized to edit." },
       { status: 403 }
     );
   }
@@ -182,10 +182,19 @@ export async function PATCH(
     new_player_friendly: body.new_player_friendly !== false,
     features_other: typeof body.features_other === "string" ? body.features_other.trim() || null : null,
     creator_keys: creatorKeys.length > 0 ? creatorKeys : null,
+    ...(Array.isArray(body.authorized_editors)
+      ? {
+          authorized_editors: body.authorized_editors
+            .filter((u: unknown) => typeof u === "string" && String(u).trim())
+            .map((u: string) => String(u).trim()),
+        }
+      : {}),
     cfx_id: cfxId,
     banner_url: body.banner_url?.trim() || null,
     thumbnail_url: body.thumbnail_url?.trim() || null,
     logo_url: body.logo_url?.trim() || null,
+    video_url: typeof body.video_url === "string" ? body.video_url.trim() || null : null,
+    gallery_images: Array.isArray(body.gallery_images) ? body.gallery_images.filter((u: unknown): u is string => typeof u === "string" && u.trim().length > 0).slice(0, 10) : null,
   };
 
   const { error: updateError } = await getSupabaseAdmin()

@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import AuthLink from "../components/AuthLink";
 import DiscordLink from "../components/DiscordLink";
 import LanguageSelect from "../components/LanguageSelect";
 import ServerBadges from "../components/ServerBadges";
+import ServerModal from "../components/ServerModal";
+import ClaimModal from "../components/ClaimModal";
 import { useLanguage } from "../components/LanguageProvider";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
 import type { Server } from "../lib/serverTags";
@@ -54,6 +57,8 @@ function parseLookingForOther(raw: string | null | undefined): string[] {
 
 export default function ServersContent() {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [servers, setServers] = useState<Server[]>([]);
   const [creatorsList, setCreatorsList] = useState<{ key: string; label: string }[]>([]);
   const [search, setSearch] = useState("");
@@ -70,6 +75,16 @@ export default function ServersContent() {
   const [liveCounts, setLiveCounts] = useState<Record<string, { players: number; max: number }>>({});
   const [session, setSession] = useState<Session | null>(null);
   const [likedServerIds, setLikedServerIds] = useState<Set<string>>(new Set());
+  const [selectedServer, setSelectedServer] = useState<Server | null>(null);
+  const [claimServer, setClaimServer] = useState<Server | null>(null);
+  const closeModal = useCallback(() => setSelectedServer(null), []);
+
+  const refreshServers = useCallback(() => {
+    fetch("/api/servers", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setServers(d.servers || []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     getSupabaseBrowser()
@@ -85,27 +100,25 @@ export default function ServersContent() {
       .then((d) => setServers(d.servers || []))
       .catch(() => setServers([]));
   }, []);
+
+  const claimId = searchParams.get("claim");
+  useEffect(() => {
+    if (!claimId || servers.length === 0) return;
+    const server = servers.find((s) => s.id === claimId);
+    if (server) {
+      setClaimServer(server);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("claim");
+      const clean = params.toString() ? `?${params}` : "";
+      router.replace(`/servers${clean}`, { scroll: false });
+    }
+  }, [claimId, servers, searchParams, router]);
   useEffect(() => {
     fetch("/api/creators/list", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setCreatorsList(d.creators || []))
       .catch(() => setCreatorsList([]));
   }, []);
-
-  const VISITOR_ID_KEY = "mlomesh_visitor_id";
-  function getOrCreateVisitorId(): string {
-    if (typeof window === "undefined") return "";
-    try {
-      let id = localStorage.getItem(VISITOR_ID_KEY);
-      if (!id || !/^[a-f0-9-]{36}$/i.test(id)) {
-        id = crypto.randomUUID();
-        localStorage.setItem(VISITOR_ID_KEY, id);
-      }
-      return id;
-    } catch {
-      return "";
-    }
-  }
 
   useEffect(() => {
     if (session?.access_token) {
@@ -116,17 +129,7 @@ export default function ServersContent() {
         .then((d) => setLikedServerIds(new Set(d.likedIds || [])))
         .catch(() => {});
     } else {
-      const vid = getOrCreateVisitorId();
-      if (vid) {
-        fetch("/api/servers/likes", {
-          headers: { "X-Visitor-ID": vid },
-        })
-          .then((r) => r.json())
-          .then((d) => setLikedServerIds(new Set(d.likedIds || [])))
-          .catch(() => {});
-      } else {
-        setLikedServerIds(new Set());
-      }
+      setLikedServerIds(new Set());
     }
   }, [session?.access_token]);
 
@@ -228,6 +231,15 @@ export default function ServersContent() {
     filterLookingFor,
   ]);
 
+  const claimedServers = useMemo(
+    () => filtered.filter((s) => s.grandfathered === true || s.claimed_by_user_id),
+    [filtered]
+  );
+  const unclaimedServers = useMemo(
+    () => filtered.filter((s) => !s.grandfathered && !s.claimed_by_user_id),
+    [filtered]
+  );
+
   const clearFilters = () => {
     setFilterRegion("");
     setFilterEconomy("");
@@ -251,25 +263,21 @@ export default function ServersContent() {
     });
   }
 
-  function recordView(serverId: string) {
+  const recordView = useCallback((serverId: string) => {
     fetch(`/api/servers/${serverId}/view`, { method: "POST" }).catch(() => {});
     setServers((prev) =>
       prev.map((s) =>
         s.id === serverId ? { ...s, views: (s.views ?? 0) + 1 } : s
       )
     );
-  }
+  }, []);
 
   function toggleLike(serverId: string) {
-    const headers: HeadersInit = {};
-    if (session?.access_token) {
-      headers.Authorization = `Bearer ${session.access_token}`;
-    } else {
-      const vid = getOrCreateVisitorId();
-      if (!vid) return;
-      headers["X-Visitor-ID"] = vid;
-    }
-    fetch(`/api/servers/${serverId}/like`, { method: "POST", headers })
+    if (!session?.access_token) return;
+    fetch(`/api/servers/${serverId}/like`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
       .then((r) => r.json())
       .then((res) => {
         if (res.error) return;
@@ -302,6 +310,26 @@ export default function ServersContent() {
     filterLookingFor.size > 0;
 
   return (
+    <>
+      {selectedServer && (
+        <ServerModal
+          server={selectedServer}
+          onClose={closeModal}
+          recordView={recordView}
+          t={t}
+          creatorsList={creatorsList}
+          liveCounts={liveCounts}
+        />
+      )}
+      {claimServer && (
+        <ClaimModal
+          server={claimServer}
+          session={session}
+          onClose={() => setClaimServer(null)}
+          onSuccess={refreshServers}
+          t={t}
+        />
+      )}
     <main
       className="home-root"
       style={{
@@ -317,7 +345,7 @@ export default function ServersContent() {
           position: "fixed",
           inset: 0,
           background:
-            '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -360,10 +388,10 @@ export default function ServersContent() {
             <a href="/about" className="header-link">
               {t("nav.about")}
             </a>
-            <a href="/creators" className="header-link">
+            <a href="/creators" className="header-link header-link-creators">
               {t("nav.creators")}
             </a>
-            <a href="/servers" className="header-link">
+            <a href="/servers" className="header-link header-link-servers">
               {t("nav.servers")}
             </a>
             <a href="/submit" className="header-link">
@@ -386,22 +414,39 @@ export default function ServersContent() {
           <p style={{ opacity: 0.8, marginBottom: 16 }}>
             {t("servers.subtitle")}
           </p>
-          <a
-            href={session ? "/servers/submit" : "/auth/start?next=%2Fservers%2Fsubmit"}
-            style={{
-              display: "inline-block",
-              marginBottom: 24,
-              padding: "10px 18px",
-              borderRadius: 8,
-              background: "#22c55e",
-              color: "#0f172a",
-              fontWeight: 600,
-              textDecoration: "none",
-              fontSize: 14,
-            }}
-          >
-            {t("servers.addServer")}
-          </a>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+            <a
+              href={session ? "/servers/submit" : "/auth/start?next=%2Fservers%2Fsubmit"}
+              style={{
+                display: "inline-block",
+                padding: "10px 18px",
+                borderRadius: 8,
+                background: "#22c55e",
+                color: "#0f172a",
+                fontWeight: 600,
+                textDecoration: "none",
+                fontSize: 14,
+              }}
+            >
+              {t("servers.addServer")}
+            </a>
+            <button
+              type="button"
+              onClick={() => document.getElementById("unclaimed-servers")?.scrollIntoView({ behavior: "smooth" })}
+              style={{
+                padding: "10px 18px",
+                borderRadius: 8,
+                background: "#5865f2",
+                border: "1px solid #5865f2",
+                color: "white",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+            >
+              {t("servers.claimYourCity")}
+            </button>
+          </div>
 
           {/* Filters */}
           <div
@@ -668,6 +713,7 @@ export default function ServersContent() {
           <p
             style={{
               marginBottom: 16,
+              marginTop: 16,
               fontSize: 14,
               color: "#94a3b8",
               display: "flex",
@@ -708,21 +754,46 @@ export default function ServersContent() {
                 : t("servers.noResults")}
             </div>
           ) : (
-            <div
-              className="servers-card-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                gap: 20,
-              }}
-            >
-              {filtered.map((s) => (
+            <>
+              {claimedServers.length > 0 && (
+                <>
+                  <h2
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 800,
+                      marginBottom: 16,
+                      color: "#f1f5f9",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                      background: "linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(34, 197, 94, 0.2))",
+                      padding: "12px 20px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(59, 130, 246, 0.4)",
+                    }}
+                  >
+                    {t("servers.claimedSection")}
+                  </h2>
+                  <div
+                    className="servers-card-grid"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                      gap: 20,
+                      marginBottom: unclaimedServers.length > 0 ? 48 : 0,
+                    }}
+                  >
+              {claimedServers.map((s) => (
                 <div
                   key={s.id}
                   className="card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedServer(s)}
+                  onKeyDown={(e) => e.key === "Enter" && setSelectedServer(s)}
                   style={{
                     padding: 0,
-                    background: "#0f1115",
+                    background: s.banner_url
+                      ? `linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.94) 100%), url(${s.banner_url}) center center / cover no-repeat`
+                      : "#0f1115",
                     border: "1px solid #1f2937",
                     borderRadius: 12,
                     display: "flex",
@@ -730,215 +801,86 @@ export default function ServersContent() {
                     gap: 0,
                     overflow: "hidden",
                     position: "relative",
+                    cursor: "pointer",
+                    minHeight: 200,
                   }}
                 >
-                  <ServerBadges ogServer={s.og_server} verified={s.verified} />
+                  <ServerBadges ogServer={s.og_server} verified={s.verified || !!(s.claimed_by_user_id || s.grandfathered)} position="bottom" />
                   {(s.og_server || s.verified) && !s.banner_url && (
                     <div style={{ height: 42, minHeight: 42, flexShrink: 0 }} />
                   )}
-                  {s.banner_url && (
-                    <a
-                      href={`/servers/${s.id}`}
-                      onClick={() => recordView(s.id)}
-                      style={{ display: "block", lineHeight: 0 }}
-                    >
-                      <img
-                        src={s.banner_url}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: 120,
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    </a>
-                  )}
-                  <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8, flex: 1, minHeight: 0, position: "relative", zIndex: 1, background: s.banner_url ? "linear-gradient(180deg, transparent 0%, rgba(15,17,21,0.4) 60%, rgba(15,17,21,0.85) 100%)" : "transparent" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      width: "100%",
+                      padding: 0,
+                      textAlign: "left",
+                    }}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {s.logo_url && (
                         <img
                           src={s.logo_url}
                           alt=""
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 8,
+                            width: 56,
+                            height: 56,
+                            borderRadius: 10,
                             objectFit: "cover",
                             flexShrink: 0,
+                            border: "2px solid rgba(75, 85, 99, 0.6)",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
                           }}
                         />
                       )}
-                      <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+                      <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: "inherit", textShadow: "0 0 3px rgba(0,0,0,1), 0 0 6px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.8)" }}>
                         {s.server_name}
                       </h2>
                     </div>
                   </div>
-                  {(s.region || s.rp_type || s.economy_type || (Array.isArray(s.criminal_types) && s.criminal_types.length > 0) || s.criminal_other || (Array.isArray(s.looking_for_types) && s.looking_for_types.length > 0) || s.looking_for_other || (Array.isArray(s.creator_keys) && s.creator_keys.length > 0)) && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 6,
-                        fontSize: 12,
-                        opacity: 0.9,
-                      }}
-                    >
-                      {s.region && (
-                        <span
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: 6,
-                            background: "#1f2937",
-                          }}
-                        >
-                          {REGIONS.find((r) => r.key === s.region)?.label || s.region}
-                        </span>
-                      )}
-                      {s.rp_type && (
-                        <span
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: 6,
-                            background: "#1f2937",
-                          }}
-                        >
-                          {RP_TYPES.find((r) => r.key === s.rp_type)?.label || s.rp_type}
-                        </span>
-                      )}
-                      {s.economy_type && (
-                        <span
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: 6,
-                            background: "#1f2937",
-                          }}
-                        >
-                          {ECONOMY_TYPES.find((e) => e.key === s.economy_type)?.label || s.economy_type}
-                        </span>
-                      )}
-                      {Array.isArray(s.criminal_types) &&
-                        s.criminal_types.map((k: string) => (
-                          <span
-                            key={k}
-                            style={{
-                              padding: "4px 8px",
-                              borderRadius: 6,
-                              background: "#1f2937",
-                            }}
-                          >
-                            {CRIMINAL_DEPTH.find((c) => c.key === k)?.label || k}
-                          </span>
-                        ))}
-                      {s.criminal_other &&
-                        s.criminal_other
-                          .split(/[,;]/)
-                          .map((part: string) => part.trim())
-                          .filter(Boolean)
-                          .map((lbl: string) => (
-                            <span
-                              key={lbl}
-                              style={{
-                                padding: "4px 8px",
-                                borderRadius: 6,
-                                background: "#1e3a5f",
-                              }}
-                            >
-                              {lbl}
-                            </span>
+                  {(() => {
+                    const MAX_PER_CAT = 2;
+                    const tagStyle = { padding: "4px 8px", borderRadius: 4, fontSize: 12 };
+                    const general = [s.region && (REGIONS.find((r) => r.key === s.region)?.label || s.region), s.rp_type && (RP_TYPES.find((r) => r.key === s.rp_type)?.label || s.rp_type), s.economy_type && (ECONOMY_TYPES.find((e) => e.key === s.economy_type)?.label || s.economy_type)].filter(Boolean) as string[];
+                    const criminal = [...(Array.isArray(s.criminal_types) ? s.criminal_types.map((k: string) => CRIMINAL_DEPTH.find((c) => c.key === k)?.label || k) : []), ...(s.criminal_other ? s.criminal_other.split(/[,;]/).map((p) => p.trim()).filter(Boolean) : [])];
+                    const lookingFor = [...(Array.isArray(s.looking_for_types) ? s.looking_for_types.map((k: string) => LOOKING_FOR_POSITIONS.find((p) => p.key === k)?.label || k) : []), ...(s.looking_for_other ? s.looking_for_other.split(/[,;]/).map((p) => p.trim()).filter(Boolean) : [])];
+                    const creators = Array.isArray(s.creator_keys) ? s.creator_keys.map((key) => creatorsList.find((c) => c.key === key)?.label || key) : [];
+                    const badges = [s.no_pay_to_win && "No P2W", s.whitelisted && "Whitelisted"].filter(Boolean) as string[];
+                    const renderSlice = (items: string[], take: number, extraStyle: Record<string, unknown>) => {
+                      const shown = items.slice(0, take);
+                      const more = items.length - take;
+                      return (
+                        <>
+                          {shown.map((item, i) => (
+                            <span key={`${item}-${i}`} style={{ ...tagStyle, ...extraStyle }}>{item}</span>
                           ))}
-                      {Array.isArray(s.looking_for_types) &&
-                        s.looking_for_types.map((k: string) => (
-                          <span
-                            key={`lf-${k}`}
-                            style={{
-                              padding: "4px 8px",
-                              borderRadius: 6,
-                              background: "rgba(234, 179, 8, 0.2)",
-                              color: "#eab308",
-                            }}
-                          >
-                            Looking for: {LOOKING_FOR_POSITIONS.find((p) => p.key === k)?.label || k}
-                          </span>
-                        ))}
-                      {s.looking_for_other &&
-                        s.looking_for_other
-                          .split(/[,;]/)
-                          .map((part: string) => part.trim())
-                          .filter(Boolean)
-                          .map((lbl: string) => (
-                            <span
-                              key={`lf-other-${lbl}`}
-                              style={{
-                                padding: "4px 8px",
-                                borderRadius: 6,
-                                background: "rgba(234, 179, 8, 0.2)",
-                                color: "#eab308",
-                              }}
-                            >
-                              Looking for: {lbl}
-                            </span>
-                          ))}
-                      {Array.isArray(s.creator_keys) &&
-                        s.creator_keys.map((key: string) => {
-                          const label = creatorsList.find((c) => c.key === key)?.label || key;
-                          return (
-                            <a
-                              key={`creator-${key}`}
-                              href={`/creators?expanded=${encodeURIComponent(label)}`}
-                              style={{
-                                padding: "4px 8px",
-                                borderRadius: 6,
-                                background: "rgba(99, 102, 241, 0.2)",
-                                color: "#818cf8",
-                                textDecoration: "none",
-                              }}
-                            >
-                              {label}
-                            </a>
-                          );
-                        })}
-                      {s.no_pay_to_win && (
-                        <span
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: 6,
-                            background: "rgba(34, 197, 94, 0.2)",
-                            color: "#22c55e",
-                          }}
-                        >
-                          No P2W
-                        </span>
-                      )}
-                      {s.whitelisted && (
-                        <span
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: 6,
-                            background: "#1f2937",
-                          }}
-                        >
-                          Whitelisted
-                        </span>
-                      )}
-                    </div>
-                  )}
+                          {more > 0 && <span style={{ ...tagStyle, background: "rgba(75, 85, 99, 0.5)", color: "#9ca3af" }}>+{more}</span>}
+                        </>
+                      );
+                    };
+                    const hasAny = general.length + criminal.length + lookingFor.length + creators.length + badges.length > 0;
+                    if (!hasAny) return null;
+                    return (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, opacity: 0.9 }}>
+                        {general.length > 0 && renderSlice(general, MAX_PER_CAT, { background: "#1f2937" })}
+                        {criminal.length > 0 && renderSlice(criminal, MAX_PER_CAT, { background: "#1e3a5f" })}
+                        {lookingFor.length > 0 && renderSlice(lookingFor.map((l) => `LF: ${l}`), MAX_PER_CAT, { background: "rgba(234, 179, 8, 0.2)", color: "#eab308" })}
+                        {creators.length > 0 && renderSlice(creators, MAX_PER_CAT, { background: "rgba(99, 102, 241, 0.2)", color: "#818cf8" })}
+                        {badges.length > 0 && badges.map((b) => <span key={b} style={{ ...tagStyle, background: b === "No P2W" ? "rgba(34, 197, 94, 0.2)" : "#1f2937", color: b === "No P2W" ? "#22c55e" : undefined }}>{b}</span>)}
+                      </div>
+                    );
+                  })()}
                   {(() => {
                     const cfxCode = (s.cfx_id || extractCfxId(s.connect_url || ""))?.toLowerCase();
                     const live = cfxCode ? liveCounts[cfxCode] : null;
                     if (live && (live.players >= 0 || live.max > 0)) {
                       return (
-                        <div style={{ fontSize: 13, opacity: 0.95, display: "flex", alignItems: "center", gap: 6 }}>
-                          <span
-                            style={{
-                              padding: "4px 8px",
-                              borderRadius: 6,
-                              background: "rgba(34, 197, 94, 0.2)",
-                              color: "#22c55e",
-                              fontWeight: 600,
-                            }}
-                          >
+                        <div style={{ fontSize: 14, opacity: 0.95 }}>
+                          <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(34, 197, 94, 0.2)", color: "#22c55e", fontWeight: 600 }}>
                             {live.players} / {live.max} online
                           </span>
                         </div>
@@ -946,13 +888,9 @@ export default function ServersContent() {
                     }
                     if (s.avg_player_count != null || s.max_slots != null) {
                       return (
-                        <div style={{ fontSize: 13, opacity: 0.8 }}>
-                          {s.avg_player_count != null && (
-                            <span>~{s.avg_player_count} avg </span>
-                          )}
-                          {s.max_slots != null && (
-                            <span>• {s.max_slots} max slots</span>
-                          )}
+                        <div style={{ fontSize: 14, opacity: 0.8 }}>
+                          {s.avg_player_count != null && <span>~{s.avg_player_count} avg </span>}
+                          {s.max_slots != null && <span>• {s.max_slots} max</span>}
                         </div>
                       );
                     }
@@ -961,19 +899,21 @@ export default function ServersContent() {
                   {s.description && (
                     <p
                       style={{
-                        fontSize: 13,
-                        opacity: 0.85,
+                        fontSize: 15,
+                        opacity: 0.9,
                         margin: 0,
                         display: "-webkit-box",
-                        WebkitLineClamp: 3,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
                         overflow: "hidden",
+                        lineHeight: 1.4,
+                        textShadow: s.banner_url ? "0 1px 3px rgba(0,0,0,1), 0 0 6px rgba(0,0,0,0.7)" : "none",
                       }}
                     >
                       {s.description}
                     </p>
                   )}
-                  <div style={{ marginTop: "auto" }}>
+                    <div style={{ marginTop: "auto" }} onClick={(e) => e.stopPropagation()}>
                     <div className="server-card-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                       {s.connect_url && (
                         <a
@@ -988,13 +928,13 @@ export default function ServersContent() {
                           rel="noopener noreferrer"
                           onClick={() => recordView(s.id)}
                           style={{
-                            padding: "10px 18px",
+                            padding: "8px 16px",
                             borderRadius: 8,
                             background: "#22c55e",
                             color: "#0f172a",
                             fontWeight: 600,
                             textDecoration: "none",
-                            fontSize: 14,
+                            fontSize: 16,
                           }}
                         >
                           {t("servers.join")}
@@ -1007,12 +947,12 @@ export default function ServersContent() {
                           rel="noopener noreferrer"
                           onClick={() => recordView(s.id)}
                           style={{
-                            padding: "10px 18px",
+                            padding: "8px 16px",
                             borderRadius: 8,
                             border: "1px solid #5865f2",
                             color: "#5865f2",
                             textDecoration: "none",
-                            fontSize: 14,
+                            fontSize: 16,
                           }}
                         >
                           Discord
@@ -1022,12 +962,12 @@ export default function ServersContent() {
                         href={`/servers/${s.id}`}
                         onClick={() => recordView(s.id)}
                         style={{
-                          padding: "10px 18px",
+                          padding: "8px 16px",
                           borderRadius: 8,
                           border: "1px solid #4b5563",
                           color: "#9ca3af",
                           textDecoration: "none",
-                          fontSize: 14,
+                          fontSize: 16,
                         }}
                       >
                         {t("servers.viewDetails")}
@@ -1037,54 +977,222 @@ export default function ServersContent() {
                           href={`/servers/${s.id}/edit`}
                           onClick={() => recordView(s.id)}
                           style={{
-                            padding: "10px 18px",
+                            padding: "8px 16px",
                             borderRadius: 8,
                             border: "1px solid #6366f1",
                             color: "#818cf8",
                             textDecoration: "none",
-                            fontSize: 14,
+                            fontSize: 16,
                           }}
                         >
                           Edit
                         </a>
                       )}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, opacity: 0.9, justifyContent: "flex-start" }}>
-                      <span title={t("servers.views") ?? "Views"}>
-                        👁 {(s.views ?? 0).toLocaleString()}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 16, opacity: 0.95, justifyContent: "flex-start" }}>
+                      <span title={t("servers.views") ?? "Views"} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 22 }}>👁</span>
+                        {(s.views ?? 0).toLocaleString()}
                       </span>
-                      <span className="server-like-row" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <button
-                          type="button"
-                          onClick={() => toggleLike(s.id)}
-                          title={likedServerIds.has(s.id) ? t("servers.unlike") : t("servers.like")}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 8,
-                            margin: -4,
-                            opacity: likedServerIds.has(s.id) ? 1 : 0.6,
-                            minWidth: 44,
-                            minHeight: 44,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {likedServerIds.has(s.id) ? "❤️" : "🤍"}
-                        </button>
-                        <span>{(s.like_count ?? 0).toLocaleString()}</span>
+                      <span className="server-like-row" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {session ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleLike(s.id)}
+                            title={likedServerIds.has(s.id) ? t("servers.unlike") : t("servers.like")}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 4,
+                              margin: -2,
+                              opacity: likedServerIds.has(s.id) ? 1 : 0.6,
+                              minWidth: 40,
+                              minHeight: 40,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 26,
+                            }}
+                          >
+                            {likedServerIds.has(s.id) ? "❤️" : "🤍"}
+                          </button>
+                        ) : (
+                          <a
+                            href={`/auth/start?next=${encodeURIComponent("/servers")}`}
+                            title={t("servers.signInToLike") ?? "Sign in to like"}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              minWidth: 40,
+                              minHeight: 40,
+                              padding: 4,
+                              margin: -2,
+                              opacity: 0.6,
+                              fontSize: 26,
+                              textDecoration: "none",
+                              color: "inherit",
+                            }}
+                          >
+                            🤍
+                          </a>
+                        )}
+                        <span style={{ fontSize: 16 }}>{(s.like_count ?? 0).toLocaleString()}</span>
                       </span>
                     </div>
                   </div>
                   </div>
                 </div>
               ))}
-            </div>
+                  </div>
+                </>
+              )}
+              {unclaimedServers.length > 0 && (
+                <div id="unclaimed-servers" style={{ scrollMarginTop: 24 }}>
+                  <h2
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 800,
+                      marginBottom: 8,
+                      color: "#f1f5f9",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                      background: "linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(249, 115, 22, 0.15))",
+                      padding: "12px 20px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(168, 85, 247, 0.4)",
+                    }}
+                  >
+                    {t("servers.unclaimedSection")}
+                  </h2>
+                  <p style={{ fontSize: 14, opacity: 0.85, marginBottom: 16 }}>{t("servers.unclaimedHint")}</p>
+                  <div
+                    className="servers-card-grid servers-unclaimed-grid"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                      gap: 20,
+                    }}
+                  >
+                    {unclaimedServers.map((s) => {
+                      const MAX_PER_CAT = 2;
+                      const tagStyle = { padding: "4px 8px", borderRadius: 4, fontSize: 12 };
+                      const general = [s.region && (REGIONS.find((r) => r.key === s.region)?.label || s.region), s.rp_type && (RP_TYPES.find((r) => r.key === s.rp_type)?.label || s.rp_type), s.economy_type && (ECONOMY_TYPES.find((e) => e.key === s.economy_type)?.label || s.economy_type)].filter(Boolean) as string[];
+                      const criminal = [...(Array.isArray(s.criminal_types) ? s.criminal_types.map((k: string) => CRIMINAL_DEPTH.find((c) => c.key === k)?.label || k) : []), ...(s.criminal_other ? s.criminal_other.split(/[,;]/).map((p) => p.trim()).filter(Boolean) : [])];
+                      const lookingFor = [...(Array.isArray(s.looking_for_types) ? s.looking_for_types.map((k: string) => LOOKING_FOR_POSITIONS.find((p) => p.key === k)?.label || k) : []), ...(s.looking_for_other ? s.looking_for_other.split(/[,;]/).map((p) => p.trim()).filter(Boolean) : [])];
+                      const creators = Array.isArray(s.creator_keys) ? s.creator_keys.map((key) => creatorsList.find((c) => c.key === key)?.label || key) : [];
+                      const badges = [s.no_pay_to_win && "No P2W", s.whitelisted && "Whitelisted"].filter(Boolean) as string[];
+                      const renderSlice = (items: string[], take: number, extraStyle: Record<string, unknown>) => (
+                        <>
+                          {items.slice(0, take).map((item, i) => (
+                            <span key={`${item}-${i}`} style={{ ...tagStyle, ...extraStyle }}>{item}</span>
+                          ))}
+                          {items.length > take && <span style={{ ...tagStyle, background: "rgba(75, 85, 99, 0.5)", color: "#9ca3af" }}>+{items.length - take}</span>}
+                        </>
+                      );
+                      const hasAny = general.length + criminal.length + lookingFor.length + creators.length + badges.length > 0;
+                      return (
+                        <div
+                          key={s.id}
+                          style={{
+                            padding: 20,
+                            background: s.banner_url ? `linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.94) 100%), url(${s.banner_url}) center center / cover no-repeat` : "#0f1115",
+                            border: "1px solid #1f2937",
+                            borderRadius: 12,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 12,
+                          }}
+                        >
+                          {(() => {
+                            const parts = (s.server_name || "").split(/\s*\|\s*/).map((p) => p.trim()).filter(Boolean);
+                            const nameOnly = parts[0] || s.server_name || "";
+                            const detailsRest = parts.slice(1).join(" | ");
+                            return (
+                              <>
+                                <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, marginBottom: detailsRest ? 8 : 12, color: "#e2e8f0", textShadow: "0 0 3px rgba(0,0,0,1), 0 0 6px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.8)", lineHeight: 1.2 }}>
+                                  {nameOnly}
+                                </h2>
+                                {detailsRest && (
+                                  <p style={{ fontSize: 14, opacity: 0.9, margin: 0, marginBottom: 12, lineHeight: 1.4 }}>
+                                    {detailsRest}
+                                  </p>
+                                )}
+                              </>
+                            );
+                          })()}
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {s.logo_url && (
+                              <img
+                                src={s.logo_url}
+                                alt=""
+                                style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "2px solid rgba(75, 85, 99, 0.6)" }}
+                              />
+                            )}
+                            {(s.region || s.rp_type) && (
+                              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                                {s.region && (REGIONS.find((r) => r.key === s.region)?.label || s.region)}
+                                {s.region && s.rp_type && " • "}
+                                {s.rp_type && (RP_TYPES.find((r) => r.key === s.rp_type)?.label || s.rp_type)}
+                              </div>
+                            )}
+                          </div>
+                          {s.description && (
+                            <p style={{ fontSize: 14, opacity: 0.9, margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {s.description}
+                            </p>
+                          )}
+                          {hasAny && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {general.length > 0 && renderSlice(general, MAX_PER_CAT, { background: "#1f2937" })}
+                              {criminal.length > 0 && renderSlice(criminal, MAX_PER_CAT, { background: "#1e3a5f" })}
+                              {lookingFor.length > 0 && renderSlice(lookingFor.map((l) => `LF: ${l}`), MAX_PER_CAT, { background: "rgba(234, 179, 8, 0.2)", color: "#eab308" })}
+                              {creators.length > 0 && renderSlice(creators, MAX_PER_CAT, { background: "rgba(99, 102, 241, 0.2)", color: "#818cf8" })}
+                              {badges.length > 0 && badges.map((b) => <span key={b} style={{ ...tagStyle, background: b === "No P2W" ? "rgba(34, 197, 94, 0.2)" : "#1f2937", color: b === "No P2W" ? "#22c55e" : undefined }}>{b}</span>)}
+                            </div>
+                          )}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={() => s.discord_url && setClaimServer(s)}
+                              disabled={!s.discord_url}
+                              style={{
+                                padding: "10px 18px",
+                                borderRadius: 8,
+                                background: s.discord_url ? "rgba(88, 101, 242, 0.3)" : "#374151",
+                                border: "1px solid " + (s.discord_url ? "#5865f2" : "#4b5563"),
+                                color: s.discord_url ? "#a5b4fc" : "#6b7280",
+                                fontWeight: 600,
+                                fontSize: 14,
+                                cursor: s.discord_url ? "pointer" : "not-allowed",
+                              }}
+                            >
+                              {t("servers.claimThisCity")}
+                            </button>
+                            {(() => {
+                              const cfxCode = (s.cfx_id || extractCfxId(s.connect_url || ""))?.toLowerCase();
+                              const live = cfxCode ? liveCounts[cfxCode] : null;
+                              if (live && (live.players >= 0 || live.max > 0)) {
+                                return (
+                                  <span style={{ fontSize: 14, padding: "2px 8px", borderRadius: 4, background: "rgba(34, 197, 94, 0.2)", color: "#22c55e", fontWeight: 600 }}>
+                                    {live.players} / {live.max} online
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
     </main>
+    </>
   );
 }

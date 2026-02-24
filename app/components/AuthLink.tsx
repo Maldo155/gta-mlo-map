@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
+import { useLanguage } from "@/app/components/LanguageProvider";
 
 export default function AuthLink() {
+  const { t } = useLanguage();
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -17,15 +21,33 @@ export default function AuthLink() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  const signOut = useCallback(async () => {
+    await getSupabaseBrowser().auth.signOut();
+    window.location.reload();
+  }, []);
+
   if (session) {
     return (
-      <a href="/servers/submit" className="header-pill">
-        Add Server
-      </a>
+      <button
+        type="button"
+        onClick={signOut}
+        className="header-pill"
+        style={{
+          cursor: "pointer",
+          border: "none",
+          font: "inherit",
+          background: "#dc2626",
+          color: "white",
+        }}
+      >
+        {t("auth.logout")}
+      </button>
     );
   }
 
-  const signInUrl = "/auth/start?next=%2Fservers%2Fsubmit";
+  // Stay on current page after sign in. Only the "Add Your City" button on /servers sends next=/servers/submit.
+  const next = pathname || "/";
+  const signInUrl = `/auth/start?next=${encodeURIComponent(next)}`;
   return (
     <a
       href={signInUrl}

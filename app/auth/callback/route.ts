@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 
 /**
  * Server-side auth callback. Exchanges the OAuth code for a session.
- * The PKCE verifier was stored in cookies by createBrowserClient when signInWithOAuth ran.
- * This route handler reads those cookies via createServerClient, so exchangeCodeForSession succeeds.
+ * The PKCE verifier is stored in cookies by createServerClient when signInWithOAuth
+ * runs in /auth/start (server route). This handler reads those cookies and completes the exchange.
  */
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -14,16 +14,30 @@ export async function GET(request: Request) {
     requestUrl.searchParams.get("error_description") ||
     requestUrl.searchParams.get("error");
 
+  // Use Host header for redirect origin. In dev, NEXT_PUBLIC_APP_URL overrides (fixes redirect-to-production).
+  const host = request.headers.get("host");
+  const protocol =
+    process.env.NODE_ENV === "production" ? "https" : (requestUrl.protocol || "http:").replace(/:$/, "");
+  const origin =
+    process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_APP_URL
+      ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
+      : process.env.NODE_ENV !== "production" && host
+        ? `${protocol}://${host}`
+        : process.env.NODE_ENV === "production" && request.headers.get("x-forwarded-host")
+          ? `https://${request.headers.get("x-forwarded-host")}`
+          : requestUrl.origin;
+
   if (errorParam) {
     const debugParams = new URLSearchParams({
       error: errorParam,
       debug_step: "oauth_return",
       debug_where: "server",
-      debug_origin: requestUrl.origin,
+      debug_origin: origin,
       debug_referer: request.headers.get("referer") || "none",
     });
+    if (next) debugParams.set("next", next);
     return NextResponse.redirect(
-      `${requestUrl.origin}/login?${debugParams.toString()}`
+      `${origin}/login?${debugParams.toString()}`
     );
   }
 
@@ -32,10 +46,10 @@ export async function GET(request: Request) {
       error: "No authorization code received.",
       debug_step: "no_code",
       debug_where: "server",
-      debug_origin: requestUrl.origin,
+      debug_origin: origin,
     });
     return NextResponse.redirect(
-      `${requestUrl.origin}/login?${debugParams.toString()}`
+      `${origin}/login?${debugParams.toString()}`
     );
   }
 
@@ -48,7 +62,7 @@ export async function GET(request: Request) {
       // Server couldn't find verifier (cookies not in request). Try client-side - browser has document.cookie.
       const clientParams = new URLSearchParams({ code, next: next || "/servers/submit" });
       return NextResponse.redirect(
-        `${requestUrl.origin}/auth/callback/client?${clientParams.toString()}`
+        `${origin}/auth/callback/client?${clientParams.toString()}`
       );
     }
     const cookieHeader = request.headers.get("cookie") || "";
@@ -61,15 +75,15 @@ export async function GET(request: Request) {
       debug_cookies: cookieHeader.length > 0 ? "present" : "absent",
       debug_cookie_count: String(cookieCount),
       debug_sb_cookies: hasSupabaseCookies ? "yes" : "no",
-      debug_origin: requestUrl.origin,
+      debug_origin: origin,
       debug_referer: request.headers.get("referer") || "none",
     });
     if (next) debugParams.set("next", next);
     return NextResponse.redirect(
-      `${requestUrl.origin}/login?${debugParams.toString()}`
+      `${origin}/login?${debugParams.toString()}`
     );
   }
 
   const redirectTo = next.startsWith("/") ? next : "/servers/submit";
-  return NextResponse.redirect(`${requestUrl.origin}${redirectTo}`);
+  return NextResponse.redirect(`${origin}${redirectTo}`);
 }

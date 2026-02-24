@@ -18,7 +18,7 @@ function LoginContent() {
   const [signingIn, setSigningIn] = useState(false);
   const [showDevHint, setShowDevHint] = useState(false);
 
-  const nextPath = searchParams.get("next") || "/servers/submit";
+  const nextPath = searchParams.get("next") || "/servers";
   const errorFromCallback = searchParams.get("error");
   const autoRetry = searchParams.get("auto_retry") === "1";
   const debugStep = searchParams.get("debug_step");
@@ -125,7 +125,7 @@ function LoginContent() {
           position: "fixed",
           inset: 0,
           background:
-            '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -168,10 +168,10 @@ function LoginContent() {
             <a href="/about" className="header-link">
               About
             </a>
-            <a href="/creators" className="header-link">
+            <a href="/creators" className="header-link header-link-creators">
               MLO Creators
             </a>
-            <a href="/servers" className="header-link">
+            <a href="/servers" className="header-link header-link-servers">
               {t("nav.servers")}
             </a>
             <a href="/submit" className="header-link">
@@ -190,7 +190,7 @@ function LoginContent() {
           }}
         >
           <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>
-            Sign in to add a server
+            {nextPath?.includes("/submit") ? "Sign in to add a server" : "Sign in to claim your city"}
           </h1>
           {errorFromCallback && (
             <div
@@ -271,7 +271,9 @@ function LoginContent() {
             </div>
           )}
           <p style={{ opacity: 0.85, marginBottom: 32, lineHeight: 1.5 }}>
-            Use your Discord account to list your FiveM server on MLOMesh.
+            {nextPath?.includes("/submit")
+              ? "Use your Discord account to list your FiveM server on MLOMesh."
+              : "Use your Discord account to verify ownership and claim your server."}
           </p>
           <button
             onClick={signInWithDiscord}

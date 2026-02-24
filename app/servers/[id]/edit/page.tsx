@@ -16,6 +16,7 @@ import {
   CRIMINAL_DEPTH,
   LOOKING_FOR_POSITIONS,
 } from "@/app/lib/serverTags";
+import GallerySortable from "@/app/components/GallerySortable";
 
 type FormState = "idle" | "sending" | "sent" | "error";
 type PageState = "loading" | "forbidden" | "notfound" | "ready";
@@ -48,6 +49,7 @@ export default function EditServerPage() {
   const [lookingForTypes, setLookingForTypes] = useState<string[]>([]);
   const [lookingForOther, setLookingForOther] = useState("");
   const [creatorKeys, setCreatorKeys] = useState<string[]>([]);
+  const [authorizedEditors, setAuthorizedEditors] = useState("");
   const [cfxId, setCfxId] = useState("");
   const [creatorsList, setCreatorsList] = useState<{ key: string; label: string; logo_url?: string | null }[]>([]);
   const [civJobsCount, setCivJobsCount] = useState("");
@@ -61,8 +63,12 @@ export default function EditServerPage() {
   const [maxSlots, setMaxSlots] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [bannerUploading, setBannerUploading] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [galleryDropActive, setGalleryDropActive] = useState(false);
 
   useEffect(() => {
     getSupabaseBrowser()
@@ -122,6 +128,8 @@ export default function EditServerPage() {
         setMaxSlots(s.max_slots != null ? String(s.max_slots) : "");
         setBannerUrl(s.banner_url || "");
         setLogoUrl(s.logo_url || "");
+        setVideoUrl(s.video_url || "");
+        setGalleryImages(Array.isArray(s.gallery_images) ? s.gallery_images : []);
         setPageState("ready");
       })
       .catch(() => setPageState("notfound"));
@@ -130,16 +138,16 @@ export default function EditServerPage() {
   useEffect(() => {
     if (pageState !== "ready" || !server) return;
     if (!session) return; // still loading session
-    if (server.user_id !== session.user.id) {
+    const canEdit = server.user_id === session.user.id;
+    if (!canEdit) {
       setPageState("forbidden");
     }
   }, [pageState, session, server]);
 
-  async function uploadImage(file: File, type: "banner" | "logo"): Promise<string | null> {
+  async function uploadImage(file: File, type: "banner" | "logo" | "gallery", opts: { silent?: boolean } = {}): Promise<string | null> {
     if (!session?.access_token) return null;
-    const setUploading = type === "banner" ? setBannerUploading : setLogoUploading;
-    const setUrl = type === "banner" ? setBannerUrl : setLogoUrl;
-    setUploading(true);
+    const setUploading = type === "gallery" ? setGalleryUploading : type === "banner" ? setBannerUploading : setLogoUploading;
+    if (!opts?.silent) setUploading(true);
     try {
       const form = new FormData();
       form.append("file", file);
@@ -151,7 +159,9 @@ export default function EditServerPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (json.publicUrl) {
-        setUrl(json.publicUrl);
+        if (type === "banner") setBannerUrl(json.publicUrl);
+        else if (type === "logo") setLogoUrl(json.publicUrl);
+        else setGalleryImages((prev) => [...prev, json.publicUrl].slice(0, 10));
         return json.publicUrl;
       }
       setErrorMessage(json.error || "Upload failed.");
@@ -160,8 +170,24 @@ export default function EditServerPage() {
       setErrorMessage("Upload failed. Please try again.");
       return null;
     } finally {
-      setUploading(false);
+      if (!opts?.silent) setUploading(false);
     }
+  }
+
+  const IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"];
+  async function handleGalleryDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setGalleryDropActive(false);
+    if (galleryUploading || galleryImages.length >= 10) return;
+    const files = Array.from(e.dataTransfer.files).filter((f) => IMAGE_TYPES.includes(f.type));
+    if (files.length === 0) return;
+    const toUpload = files.slice(0, 10 - galleryImages.length);
+    setGalleryUploading(true);
+    for (const file of toUpload) {
+      await uploadImage(file, "gallery", { silent: true });
+    }
+    setGalleryUploading(false);
   }
 
   async function submit(e: React.FormEvent) {
@@ -192,6 +218,9 @@ export default function EditServerPage() {
       looking_for_types: lookingForTypes.length > 0 ? lookingForTypes : null,
       looking_for_other: lookingForOther.trim() || null,
       creator_keys: creatorKeys.length > 0 ? creatorKeys : null,
+      authorized_editors: authorizedEditors.trim()
+        ? authorizedEditors.split(/[,;\n]+/).map((u) => u.trim()).filter(Boolean)
+        : [],
       cfx_id: cfxId.trim() || null,
       civ_jobs_count: civJobsCount ? parseInt(civJobsCount, 10) : null,
       custom_mlo_count: customMloCount ? parseInt(customMloCount, 10) : null,
@@ -204,6 +233,8 @@ export default function EditServerPage() {
       max_slots: maxSlots ? parseInt(maxSlots, 10) : null,
       banner_url: bannerUrl.trim() || null,
       logo_url: logoUrl.trim() || null,
+      video_url: videoUrl.trim() || null,
+      gallery_images: galleryImages.length > 0 ? galleryImages.slice(0, 10) : null,
     };
 
     const res = await fetch(`/api/servers/${id}`, {
@@ -247,7 +278,7 @@ export default function EditServerPage() {
   function PageLayout({ children }: { children: React.ReactNode }) {
     return (
       <main className="home-root" style={{ minHeight: "100vh", color: "white", position: "relative", overflow: "hidden" }}>
-        <div aria-hidden style={{ position: "fixed", inset: 0, background: "linear-gradient(180deg, rgba(8, 10, 15, 0.92) 0%, rgba(8, 10, 15, 0.94) 100%), #0d1117 url(\"/api/home-bg\") no-repeat center top / cover", zIndex: 0, pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "fixed", inset: 0, background: "linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url(\"/api/home-bg\") no-repeat center top / cover", zIndex: 0, pointerEvents: "none" }} />
         <div style={{ position: "relative", zIndex: 1 }}>
           <div className="header-logo-float">
             <img src="/mlomesh-logo.png" alt="MLOMesh" className="header-logo" />
@@ -265,8 +296,8 @@ export default function EditServerPage() {
               <a href="/" className="header-link">{t("nav.home")}</a>
               <a href="/map" className="header-link">{t("nav.map")}</a>
               <a href="/about" className="header-link">{t("nav.about")}</a>
-              <a href="/creators" className="header-link">{t("nav.creators")}</a>
-              <a href="/servers" className="header-link">{t("nav.servers")}</a>
+              <a href="/creators" className="header-link header-link-creators">{t("nav.creators")}</a>
+              <a href="/servers" className="header-link header-link-servers">{t("nav.servers")}</a>
               <a href="/submit" className="header-link">{t("nav.submit")}</a>
             </nav>
           </header>
@@ -355,16 +386,78 @@ export default function EditServerPage() {
                 </div>
                 <div style={sectionBoxStyle}>
                   <label style={labelStyle}>Banner</label>
-                  <label style={{ ...inputStyle, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: bannerUploading ? "not-allowed" : "pointer", opacity: bannerUploading ? 0.7 : 1, width: "auto" }}>
-                    <input type="file" accept="image/*" disabled={bannerUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f, "banner"); e.target.value = ""; }} style={{ display: "none" }} />
-                    {bannerUploading ? "Uploading…" : "Upload image"}
-                  </label>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <label style={{ ...inputStyle, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: bannerUploading ? "not-allowed" : "pointer", opacity: bannerUploading ? 0.7 : 1, width: "auto" }}>
+                      <input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" disabled={bannerUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f, "banner"); e.target.value = ""; }} style={{ display: "none" }} />
+                      {bannerUploading ? "Uploading…" : "Upload image"}
+                    </label>
+                    {bannerUrl && (
+                      <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #374151" }}>
+                        <img src={bannerUrl} alt="Banner preview" style={{ maxWidth: 200, maxHeight: 90, objectFit: "cover", display: "block" }} />
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <label style={labelStyle}>Video (optional)</label>
+                    <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." style={inputStyle} />
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <label style={labelStyle}>Gallery images (optional, max 10)</label>
+                    <span style={{ fontSize: 12, opacity: 0.7 }}> Click + or drag and drop images. Drag the ⋮⋮ handle to reorder.</span>
+                    <GallerySortable
+                      items={galleryImages}
+                      onReorder={setGalleryImages}
+                      onRemove={(i) => setGalleryImages((p) => p.filter((_, j) => j !== i))}
+                      dropActive={galleryDropActive}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (!galleryUploading && galleryImages.length < 10) setGalleryDropActive(true); }}
+                      onDragLeave={(e) => { e.preventDefault(); setGalleryDropActive(false); }}
+                      onDrop={handleGalleryDrop}
+                      renderAddButton={galleryImages.length < 10 && (
+                        <label
+                          style={{
+                            width: 80,
+                            height: 60,
+                            borderRadius: 8,
+                            border: "2px dashed #4b5563",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: galleryUploading ? "not-allowed" : "pointer",
+                            opacity: galleryUploading ? 0.7 : 1,
+                            background: "rgba(31, 41, 55, 0.5)",
+                            fontSize: 24,
+                            color: "#9ca3af",
+                          }}
+                        >
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                            disabled={galleryUploading}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) uploadImage(f, "gallery");
+                              e.target.value = "";
+                            }}
+                            style={{ display: "none" }}
+                          />
+                          {galleryUploading ? "…" : "+"}
+                        </label>
+                      )}
+                    />
+                  </div>
                   <div style={{ marginTop: 16 }}>
                     <label style={labelStyle}>Logo</label>
-                    <label style={{ ...inputStyle, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: logoUploading ? "not-allowed" : "pointer", opacity: logoUploading ? 0.7 : 1, width: "auto" }}>
-                      <input type="file" accept="image/*" disabled={logoUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f, "logo"); e.target.value = ""; }} style={{ display: "none" }} />
-                      {logoUploading ? "Uploading…" : "Upload image"}
-                    </label>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                      <label style={{ ...inputStyle, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: logoUploading ? "not-allowed" : "pointer", opacity: logoUploading ? 0.7 : 1, width: "auto" }}>
+                        <input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" disabled={logoUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f, "logo"); e.target.value = ""; }} style={{ display: "none" }} />
+                        {logoUploading ? "Uploading…" : "Upload image"}
+                      </label>
+                      {logoUrl && (
+                        <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #374151" }}>
+                          <img src={logoUrl} alt="Logo preview" style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div style={sectionBoxStyle}>

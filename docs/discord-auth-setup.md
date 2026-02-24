@@ -69,8 +69,12 @@ Or run the file: `supabase/servers-add-user-id.sql`
 
 Supabase redirects to the Site URL when your `redirectTo` is not in the allow list.
 
-- Add `http://localhost:XXXX/auth/callback` (with your actual port) to Supabase Redirect URLs
-- When running locally, the login page shows the exact URL to add
+1. Add to Supabase Redirect URLs (use wildcards to match any port):
+   - `http://localhost:3000/**`, `http://127.0.0.1:3000/**`
+   - `http://localhost:3001/**`, `http://127.0.0.1:3001/**`
+   - Or exact paths like `http://localhost:3000/auth/callback` for each port
+2. The app uses the Host header in dev, so auth works on any port without extra config.
+3. **Optional fallback:** If redirect-to-production persists, add `NEXT_PUBLIC_APP_URL=http://localhost:XXXX` (your port) to `.env.local` and restart.
 
 ### Discord "Sign in" button disappears
 

@@ -924,6 +924,16 @@ export default function AdminPage() {
   const [showServers, setShowServers] = useState(false);
   const [serverSearch, setServerSearch] = useState("");
   const [serverSyncDiscordLoading, setServerSyncDiscordLoading] = useState(false);
+  const [fivemAddCode, setFivemAddCode] = useState("");
+  const [fivemManualDiscord, setFivemManualDiscord] = useState("");
+  const [fivemPreview, setFivemPreview] = useState<{
+    hostname: string;
+    gametype: string;
+    discord: string | null;
+    players: number;
+    max_players: number;
+  } | null>(null);
+  const [fivemAddLoading, setFivemAddLoading] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
   const [session, setSession] = useState<Session | null>(null);
@@ -1479,6 +1489,64 @@ export default function AdminPage() {
     }
   }
 
+  async function fetchFivemPreview() {
+    if (!fivemAddCode.trim()) return;
+    setFivemAddLoading(true);
+    setFivemPreview(null);
+    try {
+      const code = fivemAddCode.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      const res = await fetch(`/api/fivem-server?code=${encodeURIComponent(code)}`);
+      const json = await res.json();
+      if (res.ok) {
+        const discord = json.discord_url || json.discord || null;
+        setFivemPreview({
+          hostname: json.hostname || "Unknown",
+          gametype: json.gametype || "",
+          discord: discord,
+          players: json.clients ?? json.players ?? 0,
+          max_players: json.max_slots ?? json.max_players ?? 0,
+        });
+        setFivemManualDiscord(discord || "");
+      } else {
+        alert(json.error || "Server not found");
+      }
+    } catch {
+      alert("Failed to fetch");
+    } finally {
+      setFivemAddLoading(false);
+    }
+  }
+
+  async function addServerFromFivem() {
+    if (!fivemAddCode.trim()) return;
+    setFivemAddLoading(true);
+    try {
+      const code = fivemAddCode.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      const discordOverride = fivemManualDiscord.trim();
+      const res = await fetch("/api/admin/servers/from-fivem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          code,
+          discord_url: discordOverride || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setFivemAddCode("");
+        setFivemManualDiscord("");
+        setFivemPreview(null);
+        loadServers();
+      } else {
+        alert(json.error || "Failed to add");
+      }
+    } catch {
+      alert("Failed to add");
+    } finally {
+      setFivemAddLoading(false);
+    }
+  }
+
   async function updateServerBadges(id: string, verified?: boolean, ogServer?: boolean) {
     const body: Record<string, boolean> = {};
     if (verified !== undefined) body.verified = verified;
@@ -1519,7 +1587,7 @@ export default function AdminPage() {
             position: "fixed",
             inset: 0,
             background:
-              '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+              'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
             zIndex: 0,
             pointerEvents: "none",
           }}
@@ -1553,7 +1621,7 @@ export default function AdminPage() {
             position: "fixed",
             inset: 0,
             background:
-              '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+              'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
             zIndex: 0,
             pointerEvents: "none",
           }}
@@ -1590,7 +1658,7 @@ export default function AdminPage() {
           position: "fixed",
           inset: 0,
           background:
-            '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -1634,10 +1702,10 @@ export default function AdminPage() {
           <a href="/about" className="header-link">
             {t("nav.about")}
           </a>
-          <a href="/creators" className="header-link">
+          <a href="/creators" className="header-link header-link-creators">
             {t("nav.creators")}
           </a>
-          <a href="/servers" className="header-link">
+          <a href="/servers" className="header-link header-link-servers">
             {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">
@@ -3095,13 +3163,38 @@ export default function AdminPage() {
         )}
         {showServers && (
           <>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
               <input
                 placeholder="Search servers..."
                 value={serverSearch}
                 onChange={(e) => setServerSearch(e.target.value)}
                 style={{ maxWidth: 260 }}
               />
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <input
+                  placeholder="Add from FiveM (CFX code)"
+                  value={fivemAddCode}
+                  onChange={(e) => { setFivemAddCode(e.target.value); setFivemPreview(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && fetchFivemPreview()}
+                  style={{ maxWidth: 200 }}
+                />
+                <button
+                  onClick={fetchFivemPreview}
+                  disabled={fivemAddLoading || !fivemAddCode.trim()}
+                  style={{ padding: "6px 10px", fontSize: 12 }}
+                >
+                  {fivemAddLoading ? "…" : "Preview"}
+                </button>
+                {fivemPreview && (
+                  <button
+                    onClick={addServerFromFivem}
+                    disabled={fivemAddLoading}
+                    style={{ padding: "6px 10px", fontSize: 12, background: "#15803d", color: "white", border: "none", borderRadius: 6 }}
+                  >
+                    Add
+                  </button>
+                )}
+              </div>
               <button
                 onClick={syncServersToDiscord}
                 disabled={serverSyncDiscordLoading || servers.length === 0}
@@ -3117,6 +3210,23 @@ export default function AdminPage() {
                 {serverSyncDiscordLoading ? "Syncing…" : "Sync to Discord"}
               </button>
             </div>
+            {fivemPreview && (
+              <div style={{ padding: 10, background: "#0f172a", borderRadius: 8, fontSize: 12, marginBottom: 8 }}>
+                <div style={{ fontWeight: 600 }}>{fivemPreview.hostname}</div>
+                <div style={{ opacity: 0.8 }}>Type: {fivemPreview.gametype || "(none)"} • Players: {fivemPreview.players}/{fivemPreview.max_players || "?"}</div>
+                {fivemPreview.discord && <div style={{ opacity: 0.8 }}>Discord from FiveM: {fivemPreview.discord}</div>}
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ display: "block", marginBottom: 4, fontSize: 11, color: "#94a3b8" }}>Discord (add manually if not listed)</label>
+                  <input
+                    placeholder="discord.gg/xxx or https://..."
+                    value={fivemManualDiscord}
+                    onChange={(e) => setFivemManualDiscord(e.target.value)}
+                    style={{ width: "100%", maxWidth: 320, padding: "6px 8px", fontSize: 12, background: "#1e293b", border: "1px solid #334155", borderRadius: 6, color: "#f1f5f9" }}
+                  />
+                </div>
+                <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8" }}>RP / real economy only. Skip PvP, 100k, zombie, apocalypse.</div>
+              </div>
+            )}
             <div
               style={{
                 border: "1px solid #243046",
@@ -3136,7 +3246,9 @@ export default function AdminPage() {
                   const q = serverSearch.trim().toLowerCase();
                   return (
                     (s.server_name || "").toLowerCase().includes(q) ||
-                    (s.owner_name || "").toLowerCase().includes(q)
+                    (s.owner_name || "").toLowerCase().includes(q) ||
+                    (s.cfx_id || "").toLowerCase().includes(q) ||
+                    (s.connect_url || "").toLowerCase().includes(q)
                   );
                 })
                 .map((s: any, idx: number, arr: any[]) => (

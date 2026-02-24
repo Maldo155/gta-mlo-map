@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   const { data: servers, error: fetchError } = await supabase
     .from("servers")
     .select("id")
+    .or("claimed_by_user_id.not.is.null,grandfathered.eq.true")
     .order("created_at", { ascending: false });
 
   if (fetchError || !servers?.length) {

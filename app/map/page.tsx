@@ -28,9 +28,19 @@ function MapPageContent() {
  
   const [selectedMloId, setSelectedMloId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showWelcomePopup, setShowWelcomePopup] = useState<boolean | null>(null);
   const [highlightFromFresh, setHighlightFromFresh] = useState(false);
   const [focusMlo, setFocusMlo] = useState<{ id: string; x: number; y: number } | null>(null);
   const [creatorTiles, setCreatorTiles] = useState<{ creator_key: string; partnership?: boolean }[]>([]);
+
+  useEffect(() => {
+    try {
+      const seen = sessionStorage.getItem("mlomesh_map_welcome_seen");
+      setShowWelcomePopup(!seen);
+    } catch {
+      setShowWelcomePopup(true);
+    }
+  }, []);
 
   useEffect(() => {
     let delayTimer: ReturnType<typeof setTimeout> | null = null;
@@ -133,15 +143,15 @@ function MapPageContent() {
      }
    }, [selectedCreator, search, activeCategories]);
  
-   const filteredMlos = mlos.filter((mlo) => {
-     const matchesText =
-       !search ||
-       mlo.name?.toLowerCase().includes(search.toLowerCase()) ||
-       mlo.creator?.toLowerCase().includes(search.toLowerCase()) ||
-       mlo.tag?.toLowerCase().includes(search.toLowerCase());
+  const filteredMlos = mlos.filter((mlo) => {
+    const matchesText =
+      !search ||
+      mlo.name?.toLowerCase().includes(search.toLowerCase()) ||
+      mlo.creator?.toLowerCase().includes(search.toLowerCase()) ||
+      mlo.tag?.toLowerCase().includes(search.toLowerCase());
  
-     const matchesCategory =
-       activeCategories.length === 0 || activeCategories.includes(mlo.category);
+    const matchesCategory =
+      activeCategories.length === 0 || activeCategories.includes(mlo.category);
 
      const matchesCreator =
        !selectedCreator ||
@@ -221,9 +231,18 @@ function MapPageContent() {
     return `/map${q ? `?${q}` : ""}`;
   }, [selectedMloId, selectedMlo, searchParams]);
 
+  const handleWelcomeClose = () => {
+    setShowWelcomePopup(false);
+    try {
+      sessionStorage.setItem("mlomesh_map_welcome_seen", "1");
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
      <>
-     <MapWelcomePopup />
+     <MapWelcomePopup show={showWelcomePopup ?? false} onClose={handleWelcomeClose} />
      <main
        className="home-root map-page"
        style={{
@@ -241,7 +260,7 @@ function MapPageContent() {
           position: "fixed",
           inset: 0,
           background:
-            '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -285,10 +304,10 @@ function MapPageContent() {
           <a href="/about" className="header-link">
             {t("nav.about")}
           </a>
-          <a href="/creators" className="header-link">
+          <a href="/creators" className="header-link header-link-creators">
             {t("nav.creators")}
           </a>
-          <a href="/servers" className="header-link">
+          <a href="/servers" className="header-link header-link-servers">
             {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">
@@ -317,6 +336,7 @@ function MapPageContent() {
            selectedCreator={selectedCreator}
            onCreatorChange={setSelectedCreator}
            creatorOptions={creatorOptions}
+           highlightCreatorSearch={showWelcomePopup === true}
          />
  
           <Map

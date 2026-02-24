@@ -45,43 +45,16 @@ export default function ServerDetailActions({ server }: Props) {
         .then((d) => setLiked((d.likedIds || []).includes(server.id)))
         .catch(() => {});
     } else {
-      const vid = getOrCreateVisitorId();
-      if (vid) {
-        fetch("/api/servers/likes", {
-          headers: { "X-Visitor-ID": vid },
-        })
-          .then((r) => r.json())
-          .then((d) => setLiked((d.likedIds || []).includes(server.id)))
-          .catch(() => {});
-      }
+      setLiked(false);
     }
   }, [session?.access_token, server.id]);
 
-  const VISITOR_ID_KEY = "mlomesh_visitor_id";
-  function getOrCreateVisitorId(): string {
-    if (typeof window === "undefined") return "";
-    try {
-      let id = localStorage.getItem(VISITOR_ID_KEY);
-      if (!id || !/^[a-f0-9-]{36}$/i.test(id)) {
-        id = crypto.randomUUID();
-        localStorage.setItem(VISITOR_ID_KEY, id);
-      }
-      return id;
-    } catch {
-      return "";
-    }
-  }
-
   const toggleLike = () => {
-    const headers: HeadersInit = {};
-    if (session?.access_token) {
-      headers.Authorization = `Bearer ${session.access_token}`;
-    } else {
-      const vid = getOrCreateVisitorId();
-      if (!vid) return;
-      headers["X-Visitor-ID"] = vid;
-    }
-    fetch(`/api/servers/${server.id}/like`, { method: "POST", headers })
+    if (!session?.access_token) return;
+    fetch(`/api/servers/${server.id}/like`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
       .then((r) => r.json())
       .then((res) => {
         if (res.error) return;
@@ -92,7 +65,7 @@ export default function ServerDetailActions({ server }: Props) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="server-detail-actions" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         {server.connect_url && (
@@ -158,25 +131,45 @@ export default function ServerDetailActions({ server }: Props) {
         )}
         <EditServerButton serverId={server.id} serverUserId={server.user_id} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 14, opacity: 0.9, justifyContent: "flex-start" }}>
-          <span title="Views">👁 {(server.views ?? 0).toLocaleString()}</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button
-              type="button"
-              onClick={toggleLike}
-              title={liked ? "Unlike" : "Like"}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: 2,
-                fontSize: 18,
-                opacity: liked ? 1 : 0.6,
-              }}
-            >
-              {liked ? "❤️" : "🤍"}
-            </button>
-            <span>{likeCount.toLocaleString()}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 18, opacity: 0.95, justifyContent: "flex-start" }}>
+          <span title="Views" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 24 }}>👁</span>
+            {(server.views ?? 0).toLocaleString()}
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {session ? (
+              <button
+                type="button"
+                onClick={toggleLike}
+                title={liked ? "Unlike" : "Like"}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 6,
+                  fontSize: 26,
+                  opacity: liked ? 1 : 0.6,
+                }}
+              >
+                {liked ? "❤️" : "🤍"}
+              </button>
+            ) : (
+              <a
+                href={`/auth/start?next=${encodeURIComponent(`/servers/${server.id}`)}`}
+                title="Sign in to like"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  fontSize: 26,
+                  opacity: 0.6,
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                🤍
+              </a>
+            )}
+            <span style={{ fontSize: 18 }}>{likeCount.toLocaleString()}</span>
           </span>
         </div>
       </div>

@@ -169,7 +169,7 @@ export default function CreatorsContent() {
           position: "fixed",
           inset: 0,
           background:
-            '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -213,10 +213,10 @@ export default function CreatorsContent() {
           <a href="/about" className="header-link">
             {t("nav.about")}
           </a>
-          <a href="/creators" className="header-link">
+          <a href="/creators" className="header-link header-link-creators">
             {t("nav.creators")}
           </a>
-          <a href="/servers" className="header-link">
+          <a href="/servers" className="header-link header-link-servers">
             {t("nav.servers")}
           </a>
           <a href="/submit" className="header-link">

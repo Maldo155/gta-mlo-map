@@ -148,9 +148,9 @@ export default function AdminCreatorTilesGrid(props: Props) {
               <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>
                 Change display order with the Position dropdown. Red × deletes the tile and all its MLOs.
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div className="scroll-list-items" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 320, overflowY: "auto" }}>
                 {(props.creatorTiles || []).map((t: { creator_key?: string }, i: number) => (
-                  <div key={t.creator_key || i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "#10162b", borderRadius: 6, border: "1px solid #243046" }}>
+                  <div key={t.creator_key || i} className="scroll-list-item" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "#10162b", borderRadius: 6, border: "1px solid #243046" }}>
                     <span style={{ flex: 1, fontWeight: 600 }}>{t.creator_key}</span>
                     <button type="button" title="Delete tile" onClick={async () => {
                       const key = String(t.creator_key || "").trim().toLowerCase();

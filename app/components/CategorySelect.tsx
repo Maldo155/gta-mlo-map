@@ -68,6 +68,7 @@ export default function CategorySelect({
       </button>
       {open && (
         <div
+          className="category-select-dropdown"
           style={{
             position: "absolute",
             left: 0,
@@ -87,6 +88,7 @@ export default function CategorySelect({
             <button
               type="button"
               key={c.key}
+              className="category-select-option"
               onClick={() => {
                 onChange(c.key);
                 setOpen(false);

@@ -17,6 +17,7 @@ import {
 import LivePlayerCount from "@/app/components/LivePlayerCount";
 import ServerDetailActions from "@/app/components/ServerDetailActions";
 import ServerBadges from "@/app/components/ServerBadges";
+import ServerGalleryConveyor from "@/app/components/ServerGalleryConveyor";
 
 const BASE = "https://mlomesh.vercel.app";
 
@@ -140,7 +141,7 @@ export default async function ServerPage({
           position: "fixed",
           inset: 0,
           background:
-            '#1a1f26 url("/api/home-bg") no-repeat center top / cover',
+            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -183,10 +184,10 @@ export default async function ServerPage({
             <a href="/about" className="header-link">
               About
             </a>
-            <a href="/creators" className="header-link">
+            <a href="/creators" className="header-link header-link-creators">
               MLO Creators
             </a>
-            <a href="/servers" className="header-link">
+            <a href="/servers" className="header-link header-link-servers">
               FiveM Servers
             </a>
             <a href="/submit" className="header-link">
@@ -214,7 +215,6 @@ export default async function ServerPage({
             position: "relative",
           }}
         >
-          <ServerBadges ogServer={server.og_server} verified={server.verified} />
           <a
             href="/servers"
             style={{
@@ -228,6 +228,24 @@ export default async function ServerPage({
             ← Back to Servers
           </a>
 
+          {server.video_url && (() => {
+            const watchMatch = server.video_url!.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+            const shortMatch = server.video_url!.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+            const embedMatch = server.video_url!.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+            const vid = watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1];
+            const embedUrl = vid ? `https://www.youtube.com/embed/${vid}` : null;
+            return embedUrl ? (
+              <div style={{ marginBottom: 24, borderRadius: 12, overflow: "hidden", border: "1px solid #1f2937" }}>
+                <iframe
+                  src={embedUrl}
+                  title="Server video"
+                  style={{ width: "100%", aspectRatio: "16/9", border: "none" }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : null;
+          })()}
           {server.banner_url && (
             <div
               style={{
@@ -248,6 +266,9 @@ export default async function ServerPage({
                 }}
               />
             </div>
+          )}
+          {Array.isArray(server.gallery_images) && server.gallery_images.length > 0 && (
+            <ServerGalleryConveyor images={server.gallery_images} />
           )}
 
           <div className="server-detail-header" style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
@@ -520,7 +541,10 @@ export default async function ServerPage({
             </div>
           )}
 
-          <ServerDetailActions server={server} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start", justifyContent: "space-between" }}>
+            <ServerDetailActions server={server} />
+            <ServerBadges ogServer={server.og_server} verified={server.verified || !!(server.claimed_by_user_id || server.grandfathered)} position="inline" />
+          </div>
         </section>
         </div>
       </div>

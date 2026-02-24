@@ -242,6 +242,28 @@ body:has(.map-page) .site-footer {
   background: #475569;
 }
 
+/* Hover highlight for scroll box / dropdown items */
+.creator-select-option:hover {
+  background: #1e3a5f !important;
+}
+
+.category-select-option:hover {
+  background: #334155 !important;
+}
+
+.map-page .map-category-item:hover {
+  background: #1e293b !important;
+}
+
+.map-page .map-category-item-active:hover {
+  background: #2563eb !important;
+}
+
+/* Admin reorder list items */
+.scroll-list-item:hover {
+  background: #1e293b !important;
+  border-color: #374151 !important;
+}
 
 .footer-brand {
   font-size: 16px;
@@ -337,6 +359,19 @@ button:hover {
   background: #5a4ed1;
 }
 
+.cta-server {
+  background: #059669;
+  border: 1px solid #059669;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.35);
+}
+
+.cta-server:hover {
+  background: #047857;
+  border-color: #047857;
+}
+
 .header-nav {
   display: flex;
   gap: 16px;
@@ -362,6 +397,38 @@ button:hover {
 
 .header-link:hover {
   background: #1b2740;
+}
+
+.header-link-creators {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.2)) !important;
+  border-color: rgba(139, 92, 246, 0.6) !important;
+  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.3),
+    0 0 18px rgba(139, 92, 246, 0.2),
+    0 6px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.header-link-creators:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.3)) !important;
+  border-color: rgba(168, 85, 247, 0.8) !important;
+  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.4),
+    0 0 24px rgba(139, 92, 246, 0.35),
+    0 6px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.header-link-servers {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.2), rgba(16, 185, 129, 0.15)) !important;
+  border-color: rgba(5, 150, 105, 0.55) !important;
+  box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.25),
+    0 0 18px rgba(5, 150, 105, 0.18),
+    0 6px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.header-link-servers:hover {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.35), rgba(16, 185, 129, 0.25)) !important;
+  border-color: rgba(5, 150, 105, 0.8) !important;
+  box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.35),
+    0 0 24px rgba(5, 150, 105, 0.3),
+    0 6px 14px rgba(0, 0, 0, 0.3) !important;
 }
 
 .site-header {
@@ -712,6 +779,7 @@ a.header-pill:hover {
   }
 
   .home-hero-actions .cta-submit,
+  .home-hero-actions .cta-server,
   .home-hero-actions a button {
     min-height: 48px;
     font-size: 15px;
@@ -1041,6 +1109,64 @@ a.header-pill:hover {
   }
 }
 
+/* Server modal: cell-phone friendly */
+@media (max-width: 768px) {
+  .server-modal-overlay {
+    padding: max(12px, env(safe-area-inset-top, 12px)) max(12px, env(safe-area-inset-right, 12px)) max(12px, env(safe-area-inset-bottom, 12px)) max(12px, env(safe-area-inset-left, 12px)) !important;
+    align-items: flex-start;
+    padding-top: max(24px, env(safe-area-inset-top, 24px)) !important;
+  }
+
+  .server-modal-content {
+    max-height: calc(100dvh - 48px) !important;
+  }
+
+  .server-modal-close-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    top: 8px !important;
+    right: 8px !important;
+    font-size: 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .server-modal-actions a {
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* Server gallery conveyor: smaller thumbnails on phones */
+@media (max-width: 480px) {
+  .server-gallery-conveyor-thumb {
+    width: 180px !important;
+    height: 135px !important;
+  }
+}
+
+/* Prevent iOS zoom on input focus - font-size 16px minimum */
+@media (max-width: 768px) {
+  .servers-submit-form input,
+  .servers-submit-form select,
+  .servers-submit-form textarea,
+  .servers-filters input,
+  .servers-filters select,
+  .live-chat-panel input,
+  .live-chat-panel textarea {
+    font-size: 16px !important;
+  }
+
+  .live-chat-panel button {
+    min-height: 44px !important;
+  }
+}
+
 /* Mobile: ensure nav fits without overflow */
 @media (max-width: 480px) {
   .header-nav {
@@ -1223,6 +1349,14 @@ a.header-pill:hover {
     align-items: center;
     justify-content: center;
   }
+
+  .server-detail-actions button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* Server submit form */
@@ -1327,5 +1461,114 @@ a.header-pill:hover {
 
   .login-page-section h1 {
     font-size: 20px !important;
+  }
+}
+
+/* ===== Cell-phone-friendly overrides ===== */
+
+/* Prevent iOS zoom on input focus (font-size 16px or larger) */
+@media (max-width: 768px) {
+  .servers-submit-form input,
+  .servers-submit-form select,
+  .servers-submit-form textarea,
+  .servers-filters input,
+  .servers-filters select,
+  input[type="search"],
+  input[type="text"],
+  input[type="email"],
+  input[type="url"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Server modal: safe area & touch targets */
+@media (max-width: 768px) {
+  .server-modal-overlay {
+    padding: max(12px, env(safe-area-inset-top, 0))
+             max(12px, env(safe-area-inset-right, 0))
+             max(12px, env(safe-area-inset-bottom, 0))
+             max(12px, env(safe-area-inset-left, 0)) !important;
+    align-items: flex-start;
+    padding-top: max(24px, env(safe-area-inset-top, 0)) !important;
+  }
+
+  .server-modal-content {
+    margin: auto 0 12px;
+    max-height: calc(100vh - 24px) !important;
+  }
+
+  .server-modal-close-btn {
+    width: 44px !important;
+    height: 44px !important;
+    top: 8px !important;
+    right: 8px !important;
+    font-size: 20px !important;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .server-modal-actions a {
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center;
+    padding: 12px 18px !important;
+  }
+}
+
+/* Server gallery conveyor: smaller thumbs on phones */
+@media (max-width: 480px) {
+  .server-gallery-conveyor-thumb {
+    width: 180px !important;
+    height: 135px !important;
+  }
+}
+
+/* Keep nav readable on small screens (avoid 10px) */
+@media (max-width: 480px) {
+  .header-link {
+    font-size: 11px !important;
+    padding: 10px 12px !important;
+  }
+}
+
+/* Server detail actions: touch-friendly on mobile */
+@media (max-width: 768px) {
+  .server-detail-actions a {
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center;
+  }
+  .server-detail-actions button[type="button"] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Gallery sortable: larger touch targets on mobile */
+@media (max-width: 768px) {
+  .gallery-sortable-drag-handle {
+    width: 40px !important;
+    height: 40px !important;
+    bottom: 6px !important;
+    left: 6px !important;
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 16px !important;
+  }
+
+  .gallery-sortable-remove {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px;
+    min-height: 36px;
+    top: -8px !important;
+    right: -8px !important;
+    font-size: 18px !important;
   }
 }

@@ -254,7 +254,7 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
       )}
 
       {open && (
-        <div style={chatStyles.panel}>
+        <div className="live-chat-panel" style={chatStyles.panel}>
           <div style={{ ...chatStyles.header, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{t("liveChat.title")}</span>
             <button

@@ -29,6 +29,10 @@ export async function PATCH(
     updates.verified = body.verified;
   }
 
+  if (typeof body.claimable === "boolean") {
+    updates.claimable = body.claimable;
+  }
+
   if (typeof body.og_server === "boolean") {
     if (body.og_server === true) {
       const { count } = await supabase

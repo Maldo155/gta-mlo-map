@@ -87,6 +87,10 @@ export type Server = {
   created_at?: string;
   updated_at?: string;
   server_name: string;
+  claimable?: boolean | null;
+  claimed_by_user_id?: string | null;
+  authorized_editors?: string[] | null;
+  grandfathered?: boolean | null;
   owner_name?: string | null;
   region?: RegionKey | null;
   language?: string | null;
@@ -123,6 +127,8 @@ export type Server = {
   banner_url?: string | null;
   thumbnail_url?: string | null;
   logo_url?: string | null;
+  video_url?: string | null;
+  gallery_images?: string[] | null;
   views?: number;
   like_count?: number;
 };

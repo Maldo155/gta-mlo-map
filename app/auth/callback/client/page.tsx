@@ -20,7 +20,7 @@ function ClientCallbackContent() {
     if (captured.current) return;
     const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
     const code = params.get("code");
-    const next = params.get("next") || "/servers/submit";
+    const next = params.get("next") || "/servers";
     if (code) {
       captured.current = { code, next };
       if (typeof window !== "undefined") {
@@ -31,8 +31,8 @@ function ClientCallbackContent() {
   }, []);
 
   useEffect(() => {
-    const { code, next } = captured.current || { code: searchParams.get("code"), next: searchParams.get("next") || "/servers/submit" };
-    const nextPath = next || "/servers/submit";
+    const { code, next } = captured.current || { code: searchParams.get("code"), next: searchParams.get("next") || "/servers" };
+    const nextPath = next || "/servers";
 
     if (!code) {
       const params = new URLSearchParams({
@@ -80,7 +80,7 @@ function ClientCallbackContent() {
           setStatus("error");
           router.replace(buildErrorUrl(error.message));
         } else {
-          window.location.replace(nextPath.startsWith("/") ? nextPath : "/servers/submit");
+          window.location.replace(nextPath.startsWith("/") ? nextPath : "/servers");
         }
       })
       .catch((err) => {
