@@ -45,7 +45,13 @@ export async function GET(req: Request) {
         try {
           const res = await fetch(
             `https://servers-frontend.fivem.net/api/servers/single/${encodeURIComponent(c)}`,
-            { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) }
+            {
+              headers: {
+                Accept: "application/json",
+                "User-Agent": "MLOMesh/1.0 (https://mlomesh.vercel.app)",
+              },
+              signal: AbortSignal.timeout(8000),
+            }
           );
           if (!res.ok) return { code: c, data: null };
           const json = await res.json();
