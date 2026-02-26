@@ -1,4 +1,6 @@
-# Site Banner Table
+# Site Banner Tables
+
+## Homepage banner (`site_banner`)
 
 Create this table in Supabase to store the editable status banner (homepage):
 
@@ -52,3 +54,9 @@ alter table public.site_banner enable row level security;
 create policy "Allow public read" on public.site_banner for select using (true);
 create policy "Allow admin write" on public.site_banner for all using (true);
 ```
+
+## FiveM Servers page banner (`site_banner_servers`)
+
+Run the migration in `supabase/migrations/site_banner_enabled_and_servers.sql` to:
+- Add `enabled` column to `site_banner` (toggle homepage banner on/off)
+- Create `site_banner_servers` table for the FiveM servers page banner with its own enabled toggle

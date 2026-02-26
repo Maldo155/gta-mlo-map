@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import AuthLink from "./components/AuthLink";
 import DiscordLink from "./components/DiscordLink";
 import LanguageSelect from "./components/LanguageSelect";
+import SiteHeader from "./components/SiteHeader";
 import { useLanguage } from "./components/LanguageProvider";
 
 type Mlo = {
@@ -55,6 +56,7 @@ function HomeContent() {
   const [banner, setBanner] = useState<{
     title: string | null;
     subtitle: string | null;
+    enabled?: boolean;
     font_family?: string | null;
     title_font_size?: number | null;
     subtitle_font_size?: number | null;
@@ -113,6 +115,7 @@ function HomeContent() {
         setBanner({
           title: d.title ?? null,
           subtitle: d.subtitle ?? null,
+          enabled: d.enabled !== false,
           font_family: d.font_family ?? null,
           title_font_size: d.title_font_size ?? null,
           subtitle_font_size: d.subtitle_font_size ?? null,
@@ -130,7 +133,7 @@ function HomeContent() {
 
   useEffect(() => {
     fetchBanner();
-    const interval = setInterval(fetchBanner, 60_000);
+    const interval = setInterval(fetchBanner, 15_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -420,66 +423,22 @@ function HomeContent() {
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "16px 24px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            backdropFilter: "blur(8px)",
+        <SiteHeader
+          showContact
+          onContactClick={() => {
+            const next = !showContact;
+            setShowContact(next);
+            setContactStatus("idle");
+            setContactError("");
+            if (!showContact) {
+              setTimeout(() => {
+                document
+                  .getElementById("contact")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 0);
+            }
           }}
-        >
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-              <button
-                type="button"
-                className="header-contact"
-                onClick={() => {
-                  const next = !showContact;
-                  setShowContact(next);
-                  setContactStatus("idle");
-                  setContactError("");
-                  if (!showContact) {
-                    setTimeout(() => {
-                      document
-                        .getElementById("contact")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }, 0);
-                  }
-                }}
-              >
-                {t("contact.button")}
-              </button>
-            </div>
-          </div>
-        <nav className="header-nav">
-          <a href="/" className="header-link">
-            {t("nav.home")}
-          </a>
-          <a href="/map" className="header-link">
-            {t("nav.map")}
-          </a>
-          <a href="/about" className="header-link">
-            {t("nav.about")}
-          </a>
-          <a href="/creators" className="header-link header-link-creators">
-            {t("nav.creators")}
-          </a>
-          <a href="/servers" className="header-link header-link-servers">
-            {t("nav.servers")}
-          </a>
-          <a href="/submit" className="header-link">
-            {t("nav.submit")}
-          </a>
-        </nav>
-        </header>
+        />
 
       <section
         className="home-section-wrap"
@@ -504,6 +463,7 @@ function HomeContent() {
             50% { opacity: 0.7; }
           }
         `}</style>
+        {banner?.enabled !== false && (banner?.title || banner?.subtitle) && (
         <div
           className="home-status-banner"
           style={{
@@ -525,26 +485,31 @@ function HomeContent() {
             fontFamily: banner?.font_family ? `"${banner.font_family}", sans-serif` : undefined,
           }}
         >
-          <div
-            style={{
-              fontSize: banner?.title_font_size ?? 32,
-              fontWeight: banner?.title_font_weight ?? 900,
-              letterSpacing: banner?.letter_spacing ?? "0.8px",
-              color: banner?.title_font_color || undefined,
-            }}
-          >
-            {banner?.title || t("home.status.title")}
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              fontSize: banner?.subtitle_font_size ?? 20,
-              color: banner?.subtitle_color || "#fde68a",
-            }}
-          >
-            {banner?.subtitle || t("home.status.subtitle")}
-          </div>
+          {banner?.title && (
+            <div
+              style={{
+                fontSize: banner?.title_font_size ?? 32,
+                fontWeight: banner?.title_font_weight ?? 900,
+                letterSpacing: banner?.letter_spacing ?? "0.8px",
+                color: banner?.title_font_color || undefined,
+              }}
+            >
+              {banner.title}
+            </div>
+          )}
+          {banner?.subtitle && (
+            <div
+              style={{
+                marginTop: banner?.title ? 12 : 0,
+                fontSize: banner?.subtitle_font_size ?? 20,
+                color: banner?.subtitle_color || "#fde68a",
+              }}
+            >
+              {banner.subtitle}
+            </div>
+          )}
         </div>
+        )}
       </section>
 
       <section

@@ -10,7 +10,7 @@ import {
   CRIMINAL_DEPTH,
   LOOKING_FOR_POSITIONS,
 } from "@/app/lib/serverTags";
-import { extractCfxId } from "@/app/lib/cfxUtils";
+import LivePlayerCount from "./LivePlayerCount";
 
 function getYoutubeEmbedUrl(url: string): string | null {
   if (!url?.trim()) return null;
@@ -30,7 +30,6 @@ type Props = {
   recordView: (id: string) => void;
   t: (key: string) => string;
   creatorsList: { key: string; label: string }[];
-  liveCounts: Record<string, { players: number; max: number }>;
 };
 
 export default function ServerModal({
@@ -39,7 +38,6 @@ export default function ServerModal({
   recordView,
   t,
   creatorsList,
-  liveCounts,
 }: Props) {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const allImages = [
@@ -63,8 +61,6 @@ export default function ServerModal({
     : server.connect_url
       ? `https://${server.connect_url}`
       : null;
-  const cfxCode = server.cfx_id || (server.connect_url ? extractCfxId(server.connect_url) : null);
-  const live = cfxCode ? liveCounts[cfxCode.toLowerCase()] : null;
 
   const criminalTypes = Array.isArray(server.criminal_types) ? server.criminal_types : [];
   const lookingForTypes = Array.isArray(server.looking_for_types) ? server.looking_for_types : [];
@@ -159,7 +155,7 @@ export default function ServerModal({
             <div style={{ position: "relative", background: "#111" }}>
               <img
                 src={allImages[galleryIndex]}
-                alt=""
+                alt={`${server.server_name} gallery`}
                 style={{
                   width: "100%",
                   maxHeight: 280,
@@ -204,7 +200,7 @@ export default function ServerModal({
             {server.logo_url && (
               <img
                 src={server.logo_url}
-                alt=""
+                alt={`${server.server_name} logo`}
                 style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover" }}
               />
             )}
@@ -252,9 +248,15 @@ export default function ServerModal({
             )}
           </div>
 
-          {live && (live.players >= 0 || live.max > 0) && (
-            <p style={{ marginBottom: 12, fontSize: 14, color: "#22c55e" }}>
-              {live.players} / {live.max} online
+          {(server.cfx_id || server.connect_url || server.avg_player_count != null || server.max_slots != null) && (
+            <p style={{ marginBottom: 12, fontSize: 14 }}>
+              <LivePlayerCount
+                connectUrl={server.connect_url}
+                cfxId={server.cfx_id}
+                fallbackAvg={server.avg_player_count ?? undefined}
+                fallbackMax={server.max_slots ?? undefined}
+                variant="inline"
+              />
             </p>
           )}
 

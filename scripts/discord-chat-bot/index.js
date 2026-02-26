@@ -16,6 +16,7 @@ require("dotenv").config({ path: require("path").join(__dirname, "..", "..", ".e
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 const PARENT_CHANNEL_ID = process.env.DISCORD_CHAT_CHANNEL_ID;
+const MEMBER_LEAVE_CHANNEL_ID = process.env.DISCORD_MEMBER_LEAVE_CHANNEL_ID;
 const SECRET = process.env["CHAT_DISCORD_REPLY_SECRET"];
 const API_BASE = (process.env["CHAT_API_URL"] || process.env.NEXT_PUBLIC_SITE_URL || "https://mlomesh.vercel.app").replace(/\/$/, "");
 
@@ -29,6 +30,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    ...(MEMBER_LEAVE_CHANNEL_ID ? [GatewayIntentBits.GuildMembers] : []),
   ],
   partials: [Partials.Channel, Partials.Message],
 });
@@ -84,9 +86,25 @@ client.on("messageCreate", async (msg) => {
   }
 });
 
+client.on("guildMemberRemove", async (member) => {
+  if (!MEMBER_LEAVE_CHANNEL_ID) return;
+  try {
+    const ch = await client.channels.fetch(MEMBER_LEAVE_CHANNEL_ID);
+    if (!ch || typeof ch.send !== "function") return;
+    const name = member.user?.tag || member.displayName || "Unknown";
+    const count = member.guild?.memberCount ?? "?";
+    await ch.send({
+      content: `👋 **${name}** left the server. (Members: ${count})`,
+    });
+  } catch (e) {
+    console.error("Member leave announce error:", e.message);
+  }
+});
+
 client.once("ready", async () => {
   console.log(`Discord chat bot ready. Bot: ${client.user?.tag}`);
   console.log(`Watching threads under channel: ${PARENT_CHANNEL_ID}`);
+  if (MEMBER_LEAVE_CHANNEL_ID) console.log(`Member leave announcements: #${(await client.channels.fetch(MEMBER_LEAVE_CHANNEL_ID).catch(() => null))?.name ?? MEMBER_LEAVE_CHANNEL_ID}`);
   const ch = await client.channels.fetch(PARENT_CHANNEL_ID).catch((e) => {
     console.error(`Cannot access channel:`, e.message);
     return null;

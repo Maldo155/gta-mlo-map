@@ -89,6 +89,15 @@ export default async function MloPage({
       : "/map";
 
   const mloUrl = `${BASE}/mlo/${id}`;
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: BASE },
+      { "@type": "ListItem", position: 2, name: "Map", item: `${BASE}/map` },
+      { "@type": "ListItem", position: 3, name: name, item: mloUrl },
+    ],
+  };
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -115,6 +124,7 @@ export default async function MloPage({
         overflow: "hidden",
       }}
     >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div
         aria-hidden="true"
@@ -174,6 +184,7 @@ export default async function MloPage({
         </header>
 
         <section
+          className="mlo-detail-section"
           style={{
             maxWidth: 700,
             margin: "0 auto",
@@ -253,7 +264,7 @@ export default async function MloPage({
             </p>
           )}
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+          <div className="mlo-detail-actions" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             {mlo.website_url && (
               <a
                 href={mlo.website_url}

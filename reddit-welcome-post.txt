@@ -1,0 +1,30 @@
+=== REDDIT WELCOME POST (r/MLOMesh or your community) ===
+
+TITLE:
+Welcome to the MLOMesh community! 👋
+
+BODY:
+Hey everyone,
+
+This is the official community for **MLOMesh** – the hub for MLO discovery and FiveM servers.
+
+**What is MLOMesh?**
+MLOMesh is a free platform where you can:
+• Browse MLOs on an interactive GTA map (search by location, creator, tags)
+• Discover FiveM RP servers with live player counts
+• Find and support MLO creators
+• Request MLOs you’d love to see
+
+**What’s this sub for?**
+This is the place to:
+• Share your MLOs, servers, and creations
+• Ask for recommendations or help finding interiors
+• Discuss builds, city planning, and the FiveM scene
+• Connect with creators and city owners
+• Give feedback and ideas for MLOMesh
+
+**Links**
+• Website: https://mlomesh.vercel.app
+• Submit MLOs & servers: https://mlomesh.vercel.app/submit
+
+We’re just getting started – jump in, post, and help shape what this community becomes. Happy building! 🏗️

@@ -16,7 +16,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const BASE = "https://mlomesh.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE),
   title: "MLOMesh – MLO Map & Discovery for GTA FiveM",
   description:
     "MLOMesh – Find MLOs, FiveM servers, and creators for GTA V. Interactive MLO map, FiveM server directory, creator discovery. Browse, submit, and connect with the FiveM community.",
@@ -44,8 +47,8 @@ export const metadata: Metadata = {
     description:
       "Find and browse MLOs for GTA FiveM. Interactive MLO map, creator directory, and discovery hub.",
     type: "website",
-    url: "https://mlomesh.vercel.app",
-    images: ["https://mlomesh.vercel.app/mlomesh-logo.png"],
+    url: BASE,
+    images: ["/mlomesh-logo.png"],
     siteName: "MLOMesh",
   },
   twitter: {
@@ -54,7 +57,7 @@ export const metadata: Metadata = {
     description: "Find and browse MLOs for GTA FiveM. Interactive map, creator directory, and discovery hub.",
   },
   alternates: {
-    canonical: "https://mlomesh.vercel.app",
+    canonical: BASE,
   },
   verification: {
     google: "Tv4X-F7EjOp3jUB52nWIqe_1q05rqzVYoLKeWa5Ea2A",

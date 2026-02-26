@@ -9,6 +9,7 @@ import LanguageSelect from "../components/LanguageSelect";
 import ServerBadges from "../components/ServerBadges";
 import ServerModal from "../components/ServerModal";
 import ClaimModal from "../components/ClaimModal";
+import LivePlayerCount from "../components/LivePlayerCount";
 import { useLanguage } from "../components/LanguageProvider";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
 import type { Server } from "../lib/serverTags";
@@ -19,7 +20,7 @@ import {
   CRIMINAL_DEPTH,
   LOOKING_FOR_POSITIONS,
 } from "../lib/serverTags";
-import { extractCfxId } from "../lib/cfxUtils";
+import { extractCfxId, getConnectUrl } from "../lib/cfxUtils";
 
 const PREDEFINED_LOOKING_FOR_KEYS = new Set<string>(LOOKING_FOR_POSITIONS.map((p) => p.key));
 
@@ -72,11 +73,25 @@ export default function ServersContent() {
   const [filterControllerFriendly, setFilterControllerFriendly] = useState(false);
   const [filterNewPlayerFriendly, setFilterNewPlayerFriendly] = useState(false);
   const [filterLookingFor, setFilterLookingFor] = useState<Set<string>>(new Set());
-  const [liveCounts, setLiveCounts] = useState<Record<string, { players: number; max: number }>>({});
   const [session, setSession] = useState<Session | null>(null);
   const [likedServerIds, setLikedServerIds] = useState<Set<string>>(new Set());
   const [selectedServer, setSelectedServer] = useState<Server | null>(null);
   const [claimServer, setClaimServer] = useState<Server | null>(null);
+  const [serversBanner, setServersBanner] = useState<{
+    title: string | null;
+    subtitle: string | null;
+    enabled?: boolean;
+    font_family?: string | null;
+    title_font_size?: number | null;
+    subtitle_font_size?: number | null;
+    title_font_weight?: string | null;
+    letter_spacing?: string | null;
+    subtitle_color?: string | null;
+    title_font_color?: string | null;
+    background_color?: string | null;
+    border_color?: string | null;
+    animation?: string | null;
+  } | null>(null);
   const closeModal = useCallback(() => setSelectedServer(null), []);
 
   const refreshServers = useCallback(() => {
@@ -99,6 +114,34 @@ export default function ServersContent() {
       .then((r) => r.json())
       .then((d) => setServers(d.servers || []))
       .catch(() => setServers([]));
+  }, []);
+
+  function fetchServersBanner() {
+    fetch("/api/site-banner-servers", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) =>
+        setServersBanner({
+          title: d.title ?? null,
+          subtitle: d.subtitle ?? null,
+          enabled: d.enabled === true,
+          font_family: d.font_family ?? null,
+          title_font_size: d.title_font_size ?? null,
+          subtitle_font_size: d.subtitle_font_size ?? null,
+          title_font_weight: d.title_font_weight ?? null,
+          letter_spacing: d.letter_spacing ?? null,
+          subtitle_color: d.subtitle_color ?? null,
+          title_font_color: d.title_font_color ?? null,
+          background_color: d.background_color ?? null,
+          border_color: d.border_color ?? null,
+          animation: d.animation ?? null,
+        })
+      )
+      .catch(() => setServersBanner(null));
+  }
+  useEffect(() => {
+    fetchServersBanner();
+    const interval = setInterval(fetchServersBanner, 15_000);
+    return () => clearInterval(interval);
   }, []);
 
   const claimId = searchParams.get("claim");
@@ -132,21 +175,6 @@ export default function ServersContent() {
       setLikedServerIds(new Set());
     }
   }, [session?.access_token]);
-
-  useEffect(() => {
-    const serversWithCfx = servers.filter((s) => {
-      const id = s.cfx_id || extractCfxId(s.connect_url || "");
-      return !!id;
-    });
-    if (serversWithCfx.length === 0) return;
-    const codes = serversWithCfx.map((s) => (s.cfx_id || extractCfxId(s.connect_url || ""))!).filter(Boolean);
-    const uniq = [...new Set(codes)];
-    if (uniq.length === 0) return;
-    fetch(`/api/fivem-status?codes=${uniq.join(",")}`)
-      .then((r) => r.json())
-      .then((data) => setLiveCounts(data || {}))
-      .catch(() => setLiveCounts({}));
-  }, [servers]);
 
   const allLookingForOptions = useMemo(() => {
     const predefined = LOOKING_FOR_POSITIONS.map((p) => ({ key: p.key, label: p.label }));
@@ -318,7 +346,6 @@ export default function ServersContent() {
           recordView={recordView}
           t={t}
           creatorsList={creatorsList}
-          liveCounts={liveCounts}
         />
       )}
       {claimServer && (
@@ -408,7 +435,70 @@ export default function ServersContent() {
             padding: "24px 16px 64px",
           }}
         >
-          <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>
+          {serversBanner?.enabled === true && (serversBanner?.title || serversBanner?.subtitle) && (
+            <>
+              <style>{`
+                @keyframes serversBannerFlash {
+                  0% { box-shadow: 0 0 0 rgba(59,130,246,0.0); border-color: #3b82f6; }
+                  50% { box-shadow: 0 0 24px rgba(59,130,246,0.4); border-color: #2563eb; }
+                  100% { box-shadow: 0 0 0 rgba(59,130,246,0.0); border-color: #3b82f6; }
+                }
+                @keyframes serversBannerPulse {
+                  0%, 100% { opacity: 1; transform: scale(1); }
+                  50% { opacity: 0.92; transform: scale(1.01); }
+                }
+                @keyframes serversBannerFade {
+                  0%, 100% { opacity: 1; }
+                  50% { opacity: 0.7; }
+                }
+              `}</style>
+              <div
+                className="servers-status-banner"
+                style={{
+                  borderRadius: 12,
+                  border: `2px solid ${serversBanner?.border_color || "#3b82f6"}`,
+                  background: serversBanner?.background_color || "linear-gradient(135deg, rgba(59,130,246,0.25), rgba(34,197,94,0.15))",
+                  padding: "20px 24px",
+                  marginBottom: 24,
+                  boxShadow: "0 12px 24px rgba(0,0,0,0.3)",
+                  textAlign: "center",
+                  animation: serversBanner?.animation === "none"
+                    ? undefined
+                    : serversBanner?.animation === "pulse"
+                      ? "serversBannerPulse 2s ease-in-out infinite"
+                      : serversBanner?.animation === "fade"
+                        ? "serversBannerFade 2s ease-in-out infinite"
+                        : "serversBannerFlash 1.6s ease-in-out infinite",
+                  fontFamily: serversBanner?.font_family ? `"${serversBanner.font_family}", sans-serif` : undefined,
+                }}
+              >
+                {serversBanner?.title && (
+                  <div
+                    style={{
+                      fontSize: serversBanner?.title_font_size ?? 28,
+                      fontWeight: serversBanner?.title_font_weight ?? 800,
+                      letterSpacing: serversBanner?.letter_spacing ?? "0.5px",
+                      color: serversBanner?.title_font_color || undefined,
+                    }}
+                  >
+                    {serversBanner.title}
+                  </div>
+                )}
+                {serversBanner?.subtitle && (
+                  <div
+                    style={{
+                      marginTop: serversBanner?.title ? 10 : 0,
+                      fontSize: serversBanner?.subtitle_font_size ?? 16,
+                      color: serversBanner?.subtitle_color || "#94a3b8",
+                    }}
+                  >
+                    {serversBanner.subtitle}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          <h1 className="servers-page-title" style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>
             {t("servers.title")}
           </h1>
           <p style={{ opacity: 0.8, marginBottom: 16 }}>
@@ -770,7 +860,7 @@ export default function ServersContent() {
                       border: "1px solid rgba(59, 130, 246, 0.4)",
                     }}
                   >
-                    {t("servers.claimedSection")}
+                    {t("servers.claimedSection")} <span style={{ opacity: 0.9, fontWeight: 600 }}>({claimedServers.length})</span>
                   </h2>
                   <div
                     className="servers-card-grid"
@@ -825,7 +915,7 @@ export default function ServersContent() {
                       {s.logo_url && (
                         <img
                           src={s.logo_url}
-                          alt=""
+                          alt={`${s.server_name} logo`}
                           style={{
                             width: 56,
                             height: 56,
@@ -874,28 +964,15 @@ export default function ServersContent() {
                       </div>
                     );
                   })()}
-                  {(() => {
-                    const cfxCode = (s.cfx_id || extractCfxId(s.connect_url || ""))?.toLowerCase();
-                    const live = cfxCode ? liveCounts[cfxCode] : null;
-                    if (live && (live.players >= 0 || live.max > 0)) {
-                      return (
-                        <div style={{ fontSize: 14, opacity: 0.95 }}>
-                          <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(34, 197, 94, 0.2)", color: "#22c55e", fontWeight: 600 }}>
-                            {live.players} / {live.max} online
-                          </span>
-                        </div>
-                      );
-                    }
-                    if (s.avg_player_count != null || s.max_slots != null) {
-                      return (
-                        <div style={{ fontSize: 14, opacity: 0.8 }}>
-                          {s.avg_player_count != null && <span>~{s.avg_player_count} avg </span>}
-                          {s.max_slots != null && <span>• {s.max_slots} max</span>}
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                  <div style={{ fontSize: 14, minHeight: 24 }}>
+                    <LivePlayerCount
+                      connectUrl={s.connect_url}
+                      cfxId={s.cfx_id}
+                      fallbackAvg={s.avg_player_count}
+                      fallbackMax={s.max_slots}
+                      variant="badge"
+                    />
+                  </div>
                   {s.description && (
                     <p
                       style={{
@@ -915,15 +992,9 @@ export default function ServersContent() {
                   )}
                     <div style={{ marginTop: "auto" }} onClick={(e) => e.stopPropagation()}>
                     <div className="server-card-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                      {s.connect_url && (
+                      {getConnectUrl(s.connect_url, s.cfx_id) && (
                         <a
-                          href={
-                            s.connect_url.startsWith("http://") ||
-                            s.connect_url.startsWith("https://") ||
-                            s.connect_url.startsWith("fivem://")
-                              ? s.connect_url
-                              : `https://${s.connect_url}`
-                          }
+                          href={getConnectUrl(s.connect_url, s.cfx_id)!}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => recordView(s.id)}
@@ -1070,7 +1141,7 @@ export default function ServersContent() {
                       border: "1px solid rgba(168, 85, 247, 0.4)",
                     }}
                   >
-                    {t("servers.unclaimedSection")}
+                    {t("servers.unclaimedSection")} <span style={{ opacity: 0.9, fontWeight: 600 }}>({unclaimedServers.length})</span>
                   </h2>
                   <p style={{ fontSize: 14, opacity: 0.85, marginBottom: 16 }}>{t("servers.unclaimedHint")}</p>
                   <div
@@ -1132,7 +1203,7 @@ export default function ServersContent() {
                             {s.logo_url && (
                               <img
                                 src={s.logo_url}
-                                alt=""
+                                alt={`${s.server_name} logo`}
                                 style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "2px solid rgba(75, 85, 99, 0.6)" }}
                               />
                             )}
@@ -1176,18 +1247,13 @@ export default function ServersContent() {
                             >
                               {t("servers.claimThisCity")}
                             </button>
-                            {(() => {
-                              const cfxCode = (s.cfx_id || extractCfxId(s.connect_url || ""))?.toLowerCase();
-                              const live = cfxCode ? liveCounts[cfxCode] : null;
-                              if (live && (live.players >= 0 || live.max > 0)) {
-                                return (
-                                  <span style={{ fontSize: 14, padding: "2px 8px", borderRadius: 4, background: "rgba(34, 197, 94, 0.2)", color: "#22c55e", fontWeight: 600 }}>
-                                    {live.players} / {live.max} online
-                                  </span>
-                                );
-                              }
-                              return null;
-                            })()}
+                            <LivePlayerCount
+                              connectUrl={s.connect_url}
+                              cfxId={s.cfx_id}
+                              fallbackAvg={s.avg_player_count}
+                              fallbackMax={s.max_slots}
+                              variant="badge"
+                            />
                           </div>
                         </div>
                       );

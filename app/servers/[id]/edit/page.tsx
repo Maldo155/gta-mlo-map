@@ -171,14 +171,30 @@ export default function EditServerPage() {
   useEffect(() => {
     if (pageState !== "ready" || !server) return;
     if (!session) return; // still loading session
-    const discordUsername = (session.user.user_metadata as Record<string, unknown>)?.user_name ?? (session.user.user_metadata as Record<string, unknown>)?.username ?? (session.user.user_metadata as Record<string, unknown>)?.full_name;
-    const userHandle = typeof discordUsername === "string" ? discordUsername.trim().toLowerCase() : "";
-    const editors = (server.authorized_editors ?? []) as string[];
-    const isAuthorizedEditor = userHandle && editors.some((e) => String(e).trim().toLowerCase() === userHandle);
-    const canEdit = server.user_id === session.user.id || server.claimed_by_user_id === session.user.id || isAuthorizedEditor;
-    if (!canEdit) {
-      setPageState("forbidden");
+    let cancelled = false;
+    async function checkAccess() {
+      // Admins can edit any server (must send Bearer token for requireAdmin)
+      const adminRes = await fetch("/api/admin/me", {
+        cache: "no-store",
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
+      });
+      if (cancelled) return;
+      if (adminRes.ok) {
+        return; // Admin — allow edit
+      }
+      const discordUsername = (session!.user.user_metadata as Record<string, unknown>)?.user_name ?? (session!.user.user_metadata as Record<string, unknown>)?.username ?? (session!.user.user_metadata as Record<string, unknown>)?.full_name;
+      const userHandle = typeof discordUsername === "string" ? discordUsername.trim().toLowerCase() : "";
+      const editors = (server!.authorized_editors ?? []) as string[];
+      const isAuthorizedEditor = userHandle && editors.some((e) => String(e).trim().toLowerCase() === userHandle);
+      const canEdit = server!.user_id === session!.user.id || server!.claimed_by_user_id === session!.user.id || isAuthorizedEditor;
+      if (!canEdit) {
+        setPageState("forbidden");
+      }
     }
+    checkAccess();
+    return () => { cancelled = true; };
   }, [pageState, session, server]);
 
   async function uploadImage(file: File, type: "banner" | "logo" | "gallery", opts: { silent?: boolean } = {}): Promise<string | null> {

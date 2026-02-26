@@ -19,7 +19,7 @@ export default function CategoryIcon({
     return (
       <img
         src={(cat as { iconImage: string }).iconImage}
-        alt=""
+        alt={(cat as { label?: string }).label || (cat as { key: string }).key || "Category icon"}
         style={{
           width: size,
           height: size,

@@ -108,6 +108,15 @@ export default async function ServerPage({
   const creatorLabels = creatorKeys.map((k) => creatorKeyToLabel.get(k) || k).filter(Boolean);
 
   const serverUrl = `${BASE}/servers/${server.id}`;
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: BASE },
+      { "@type": "ListItem", position: 2, name: "FiveM Servers", item: `${BASE}/servers` },
+      { "@type": "ListItem", position: 3, name: server.server_name || "Server", item: serverUrl },
+    ],
+  };
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -134,6 +143,7 @@ export default async function ServerPage({
         overflow: "hidden",
       }}
     >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div
         aria-hidden="true"
@@ -257,7 +267,7 @@ export default async function ServerPage({
             >
               <img
                 src={server.banner_url}
-                alt=""
+                alt={`${server.server_name} banner`}
                 style={{
                   width: "100%",
                   maxHeight: 280,
@@ -268,14 +278,14 @@ export default async function ServerPage({
             </div>
           )}
           {Array.isArray(server.gallery_images) && server.gallery_images.length > 0 && (
-            <ServerGalleryConveyor images={server.gallery_images} />
+            <ServerGalleryConveyor images={server.gallery_images} serverName={server.server_name} />
           )}
 
           <div className="server-detail-header" style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
             {server.logo_url && (
               <img
                 src={server.logo_url}
-                alt=""
+                alt={`${server.server_name} logo`}
                 style={{
                   width: 64,
                   height: 64,

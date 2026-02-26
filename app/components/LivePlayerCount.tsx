@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Live player count from FiveM API. Each card fetches independently - do NOT switch
+ * to batch fetch; the API returns different shapes for single vs multi codes and
+ * that caused display bugs. See /api/fivem-status for the API.
+ */
 import { useEffect, useState } from "react";
 import { extractCfxId } from "@/app/lib/cfxUtils";
 
@@ -23,10 +28,31 @@ export default function LivePlayerCount({
 
   useEffect(() => {
     if (!code) return;
-    fetch(`/api/fivem-status?code=${encodeURIComponent(code)}`)
-      .then((r) => r.json())
-      .then((data) => (data && typeof data.players === "number" ? setLive(data) : setLive(null)))
-      .catch(() => setLive(null));
+    const codeStr = code;
+    let cancelled = false;
+    async function fetchCount(attempt = 0) {
+      try {
+        const res = await fetch(`/api/fivem-status?code=${encodeURIComponent(codeStr)}`);
+        if (cancelled) return;
+        const data = await res.json();
+        if (!data || typeof data !== "object") {
+          if (attempt < 1) setTimeout(() => fetchCount(attempt + 1), 2000);
+          return;
+        }
+        const key = codeStr.toLowerCase();
+        const val = (data as Record<string, unknown>)[key];
+        if (val && typeof val === "object" && typeof (val as { players?: number }).players === "number") {
+          setLive(val as { players: number; max: number });
+        } else if (typeof (data as { players?: number }).players === "number") {
+          setLive(data as { players: number; max: number });
+        }
+      } catch {
+        if (attempt < 1 && !cancelled) setTimeout(() => fetchCount(attempt + 1), 2000);
+        else setLive(null);
+      }
+    }
+    fetchCount();
+    return () => { cancelled = true; };
   }, [code]);
 
   if (live && (live.players >= 0 || live.max > 0)) {
@@ -55,9 +81,9 @@ export default function LivePlayerCount({
 
   if (fallbackAvg != null || fallbackMax != null) {
     return (
-      <span style={{ opacity: 0.8 }}>
-        {fallbackAvg != null && <>~{fallbackAvg} avg players </>}
-        {fallbackMax != null && <>• {fallbackMax} max slots</>}
+      <span style={{ fontSize: 14, opacity: 0.85 }}>
+        {fallbackAvg != null && <span>~{fallbackAvg} avg </span>}
+        {fallbackMax != null && <span>• {fallbackMax} max</span>}
       </span>
     );
   }

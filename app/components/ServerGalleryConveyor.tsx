@@ -6,9 +6,10 @@ const GALLERY_CONVEYOR_SPEED_SEC = 400;
 
 type Props = {
   images: string[];
+  serverName?: string;
 };
 
-export default function ServerGalleryConveyor({ images }: Props) {
+export default function ServerGalleryConveyor({ images, serverName }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   if (!images.length) return null;
   const duplicated = [...images, ...images];
@@ -75,7 +76,7 @@ export default function ServerGalleryConveyor({ images }: Props) {
               >
                 <img
                   src={url}
-                  alt=""
+                  alt={serverName ? `${serverName} gallery image` : "Server gallery image"}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -153,7 +154,7 @@ export default function ServerGalleryConveyor({ images }: Props) {
           </button>
           <img
             src={images[lightboxIndex]}
-            alt=""
+            alt={serverName ? `${serverName} gallery image` : "Server gallery image"}
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: "100%",

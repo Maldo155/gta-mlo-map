@@ -1,0 +1,19 @@
+=== REDDIT POST (for r/GTARP crosspost) ===
+
+TITLE:
+MLOMesh – One place for MLOs & FiveM servers (map, creators, RP cities)
+
+BODY:
+We built MLOMesh because hunting for MLOs is a mess. You search everywhere—Discord, Twitter, random forums—and still end up guessing whether something exists for the spot you need. Same deal finding servers.
+
+**What it is:**
+• **Interactive MLO map** – Browse interiors by location on the GTA map. Search by name, creator, tags, or coordinates.
+• **FiveM server directory** – Find RP servers with live player counts. Filter by economy, RP style, and more.
+• **Creator spotlight** – Discover MLO creators, their portfolios, featured packs, and links.
+• **Wanted locations** – Request MLOs you need. Creators see what the community wants next.
+• **Submit** – Creators and servers can add their work for free.
+
+**Who it’s for:**
+MLO creators sharing maps, players and city owners browsing for interiors, and anyone looking for the right fit instead of guessing.
+
+**Link:** https://mlomesh.vercel.app

@@ -62,7 +62,7 @@ function SortableThumb({ id, url, index, onRemove }: { id: string; url: string; 
     >
       <img
         src={url}
-        alt=""
+        alt="Gallery image"
         style={{
           width: 80,
           height: 60,
@@ -156,7 +156,7 @@ function OverlayThumb({ url }: { url: string }) {
     >
       <img
         src={url}
-        alt=""
+        alt="Gallery image"
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
       />
     </div>

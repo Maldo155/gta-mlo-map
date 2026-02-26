@@ -44,8 +44,11 @@ This lets the bot run even when your PC is off. You can reply from Discord on yo
 | `DISCORD_CHAT_CHANNEL_ID` | Your channel ID (e.g. 1472008469916680304) |
 | `CHAT_DISCORD_REPLY_SECRET` | Same secret as in Vercel |
 | `CHAT_API_URL` | `https://mlomesh.vercel.app` |
+| `DISCORD_MEMBER_LEAVE_CHANNEL_ID` | (optional) Channel ID for leave announcements |
 
 4. Save. Railway will redeploy with the new variables.
+
+**Leave announcements:** To announce when members leave, add `DISCORD_MEMBER_LEAVE_CHANNEL_ID` and enable **Server Members Intent** in the Discord Developer Portal (Bot → Privileged Gateway Intents).
 
 ---
 

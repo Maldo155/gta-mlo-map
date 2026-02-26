@@ -923,6 +923,7 @@ export default function AdminPage() {
   const [servers, setServers] = useState<any[]>([]);
   const [showServers, setShowServers] = useState(false);
   const [serverSearch, setServerSearch] = useState("");
+  const [serverClaimFilter, setServerClaimFilter] = useState<"all" | "claimed" | "unclaimed">("all");
   const [serverSyncDiscordLoading, setServerSyncDiscordLoading] = useState(false);
   const [fivemAddCode, setFivemAddCode] = useState("");
   const [fivemManualDiscord, setFivemManualDiscord] = useState("");
@@ -977,6 +978,7 @@ export default function AdminPage() {
   const [showReorderTiles, setShowReorderTiles] = useState(true);
   const [showEditMlos, setShowEditMlos] = useState(false);
   const [showStatusBanner, setShowStatusBanner] = useState(false);
+  const [bannerEnabled, setBannerEnabled] = useState(true);
   const [bannerTitle, setBannerTitle] = useState("");
   const [bannerSubtitle, setBannerSubtitle] = useState("");
   const [bannerFontFamily, setBannerFontFamily] = useState("");
@@ -990,6 +992,21 @@ export default function AdminPage() {
   const [bannerBorderColor, setBannerBorderColor] = useState("");
   const [bannerAnimation, setBannerAnimation] = useState("");
   const [bannerSaving, setBannerSaving] = useState(false);
+  const [showServersBanner, setShowServersBanner] = useState(false);
+  const [serversBannerEnabled, setServersBannerEnabled] = useState(true);
+  const [serversBannerTitle, setServersBannerTitle] = useState("");
+  const [serversBannerSubtitle, setServersBannerSubtitle] = useState("");
+  const [serversBannerFontFamily, setServersBannerFontFamily] = useState("");
+  const [serversBannerTitleFontSize, setServersBannerTitleFontSize] = useState("");
+  const [serversBannerSubtitleFontSize, setServersBannerSubtitleFontSize] = useState("");
+  const [serversBannerTitleFontWeight, setServersBannerTitleFontWeight] = useState("");
+  const [serversBannerLetterSpacing, setServersBannerLetterSpacing] = useState("");
+  const [serversBannerSubtitleColor, setServersBannerSubtitleColor] = useState("");
+  const [serversBannerTitleFontColor, setServersBannerTitleFontColor] = useState("");
+  const [serversBannerBackgroundColor, setServersBannerBackgroundColor] = useState("");
+  const [serversBannerBorderColor, setServersBannerBorderColor] = useState("");
+  const [serversBannerAnimation, setServersBannerAnimation] = useState("");
+  const [serversBannerSaving, setServersBannerSaving] = useState(false);
   const [editMloSearch, setEditMloSearch] = useState("");
   const [editMloSelectedIds, setEditMloSelectedIds] = useState<Set<string>>(new Set());
   const [editingMloId, setEditingMloId] = useState<string | null>(null);
@@ -1004,6 +1021,8 @@ export default function AdminPage() {
   } | null>(null);
   const [editMloSaving, setEditMloSaving] = useState(false);
   const [showCreatorSpotlight, setShowCreatorSpotlight] = useState(false);
+  const [showAdminPanels, setShowAdminPanels] = useState(false);
+  const [activePanel, setActivePanel] = useState<"all" | "addMlos" | "statusBanner" | "serversBanner" | "liveChats" | "editMlos" | "creatorTiles" | "creatorSpotlight" | "review" | "servers" | null>(null);
   const [spotlightLogoSize, setSpotlightLogoSize] = useState<Record<string, number>>({});
   const [spotlightSaving, setSpotlightSaving] = useState<string | null>(null);
   const [spotlightUploading, setSpotlightUploading] = useState<string | null>(null);
@@ -1160,6 +1179,7 @@ export default function AdminPage() {
   async function loadBanner() {
     const res = await fetch("/api/site-banner", { cache: "no-store" });
     const json = await res.json();
+    setBannerEnabled(json.enabled !== false);
     setBannerTitle(json.title ?? "");
     setBannerSubtitle(json.subtitle ?? "");
     setBannerFontFamily(json.font_family ?? "");
@@ -1172,6 +1192,24 @@ export default function AdminPage() {
     setBannerBackgroundColor(json.background_color ?? "");
     setBannerBorderColor(json.border_color ?? "");
     setBannerAnimation(json.animation ?? "");
+  }
+
+  async function loadServersBanner() {
+    const res = await fetch("/api/site-banner-servers", { cache: "no-store" });
+    const json = await res.json();
+    setServersBannerEnabled(json.enabled !== false);
+    setServersBannerTitle(json.title ?? "");
+    setServersBannerSubtitle(json.subtitle ?? "");
+    setServersBannerFontFamily(json.font_family ?? "");
+    setServersBannerTitleFontSize(json.title_font_size != null ? String(json.title_font_size) : "");
+    setServersBannerSubtitleFontSize(json.subtitle_font_size != null ? String(json.subtitle_font_size) : "");
+    setServersBannerTitleFontWeight(json.title_font_weight ?? "");
+    setServersBannerLetterSpacing(json.letter_spacing ?? "");
+    setServersBannerSubtitleColor(json.subtitle_color ?? "");
+    setServersBannerTitleFontColor(json.title_font_color ?? "");
+    setServersBannerBackgroundColor(json.background_color ?? "");
+    setServersBannerBorderColor(json.border_color ?? "");
+    setServersBannerAnimation(json.animation ?? "");
   }
 
   async function loadChatThreads() {
@@ -1203,7 +1241,7 @@ export default function AdminPage() {
   }
 
   async function refreshAll() {
-    await Promise.all([loadMlos(), loadRequests(), loadServers(), loadCreatorTiles(), loadBanner(), loadChatThreads()]);
+    await Promise.all([loadMlos(), loadRequests(), loadServers(), loadCreatorTiles(), loadBanner(), loadServersBanner(), loadChatThreads()]);
     setLastRefreshAt(new Date().toLocaleTimeString());
   }
 
@@ -1421,25 +1459,6 @@ export default function AdminPage() {
     getSupabaseBrowser().auth.signOut();
     setIsAdmin(false);
     setAuthError("");
-  }
-
-  async function deleteAllMlos() {
-    if (!confirm("Delete ALL MLOs? This cannot be undone.")) return;
-    const res = await fetch("/api/mlo?all=true", {
-      method: "DELETE",
-      headers: authHeaders(),
-    });
-
-    if (res.ok) {
-      loadMlos();
-      setSelectedMloId(null);
-      setIsSidebarOpen(false);
-      const json = await res.json();
-      alert(`Deleted ${json.count ?? 0} MLO(s).`);
-    } else {
-      const text = await res.text();
-      alert(`Delete failed: ${text}`);
-    }
   }
 
   async function deleteRequest(id: string) {
@@ -1713,7 +1732,7 @@ export default function AdminPage() {
           </a>
         </nav>
       </header>
-      <div style={{ padding: 20 }}>
+      <div className="admin-page-wrap" style={{ padding: 20 }}>
         <h1>{t("admin.title")}</h1>
         <p style={{ marginTop: 8, marginBottom: 16, fontSize: 14, opacity: 0.9, maxWidth: 600 }}>
           Manage your map: add or edit MLOs, creator tiles, the homepage banner, and more. Use the collapsible sections below — each controls a different part of the site.
@@ -1759,6 +1778,23 @@ export default function AdminPage() {
       </div>
 
       <button
+        onClick={() => { setShowAdminPanels((v) => !v); if (showAdminPanels) setActivePanel(null); }}
+        title={showAdminPanels ? "Hide admin panels to view map" : "Show admin panels"}
+        style={{
+          marginBottom: 12,
+          padding: "10px 16px",
+          borderRadius: 8,
+          border: "1px solid #3b82f6",
+          background: showAdminPanels ? "#1e3a5f" : "#1e40af",
+          color: "#93c5fd",
+          fontWeight: 700,
+          cursor: "pointer",
+          fontSize: 14,
+        }}
+      >
+        {showAdminPanels ? "− Hide panels" : "+ Show panels"}
+      </button>
+      <button
         onClick={logout}
         title="Sign out of admin"
         style={{
@@ -1774,28 +1810,71 @@ export default function AdminPage() {
       >
         {t("admin.logout")}
       </button>
-      <button
-        onClick={deleteAllMlos}
-        title="Permanently removes every MLO from the map. Use with caution."
+      {showAdminPanels && (
+      <>
+      <div
         style={{
           marginBottom: 12,
-          marginLeft: 8,
-          padding: "6px 10px",
-          borderRadius: 6,
-          border: "1px solid #333",
-          background: "#7f1d1d",
-          color: "white",
-          fontWeight: 600,
-          cursor: "pointer",
+          padding: 12,
+          background: "#0f172a",
+          border: "1px solid #243046",
+          borderRadius: 10,
         }}
       >
-        {t("admin.deleteAll")}
-      </button>
+        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>Select a panel:</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={() => setActivePanel("all")}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: `1px solid ${activePanel === "all" ? "#3b82f6" : "#374151"}`,
+              background: activePanel === "all" ? "#1e3a5f" : "transparent",
+              color: activePanel === "all" ? "#93c5fd" : "#9ca3af",
+              fontWeight: activePanel === "all" ? 600 : 400,
+              cursor: "pointer",
+              fontSize: 12,
+            }}
+          >
+            Show all
+          </button>
+          {(["addMlos", "statusBanner", "serversBanner", "liveChats", "editMlos", "creatorTiles", "creatorSpotlight", "review", "servers"] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActivePanel(id)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 6,
+                border: `1px solid ${activePanel === id ? "#3b82f6" : "#374151"}`,
+                background: activePanel === id ? "#1e3a5f" : "transparent",
+                color: activePanel === id ? "#93c5fd" : "#9ca3af",
+                fontWeight: activePanel === id ? 600 : 400,
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              {id === "addMlos" && "➕ Add MLOs"}
+              {id === "statusBanner" && "🏠 Status Banner"}
+              {id === "serversBanner" && "📺 Servers Banner"}
+              {id === "liveChats" && "💬 Live Chats"}
+              {id === "editMlos" && "✏️ Edit MLOs"}
+              {id === "creatorTiles" && "🌸 Creator Tiles"}
+              {id === "creatorSpotlight" && "⭐ Creator Spotlight"}
+              {id === "review" && "📋 Review"}
+              {id === "servers" && "🌐 FiveM Servers"}
+            </button>
+          ))}
+        </div>
+      </div>
 
+      {(activePanel === "all" || activePanel === "addMlos") && (
       <div
         style={{
           marginBottom: 12,
           border: "1px solid #243046",
+          borderLeft: "4px solid #22c55e",
           borderRadius: 10,
           padding: 12,
           background: "#10162b",
@@ -1807,9 +1886,14 @@ export default function AdminPage() {
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: showControls ? 10 : 0,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <div style={{ fontWeight: 700 }}>{t("admin.controls")}</div>
+          <div>
+            <div style={{ fontWeight: 700, color: "#22c55e" }}>➕ {t("admin.addMlos")}</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Add new MLOs to the map — search coords, pick spot, submit</div>
+          </div>
           <button onClick={() => setShowControls((v) => !v)}>
             {showControls
               ? `${t("admin.hide")} ▲`
@@ -1850,11 +1934,14 @@ export default function AdminPage() {
           </>
         )}
       </div>
+      )}
 
+      {(activePanel === "all" || activePanel === "statusBanner") && (
       <div
         style={{
           marginBottom: 12,
           border: "1px solid #243046",
+          borderLeft: "4px solid #f59e0b",
           borderRadius: 10,
           padding: 12,
           background: "#10162b",
@@ -1866,9 +1953,14 @@ export default function AdminPage() {
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: showStatusBanner ? 10 : 0,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <div style={{ fontWeight: 700 }}>{t("admin.editStatusBanner")}</div>
+          <div>
+            <div style={{ fontWeight: 700, color: "#fbbf24" }}>🏠 {t("admin.editStatusBanner")}</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Homepage — appears above the map</div>
+          </div>
           <button onClick={() => setShowStatusBanner((v) => !v)}>
             {showStatusBanner ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
           </button>
@@ -1877,6 +1969,18 @@ export default function AdminPage() {
           <>
           <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
             Customize the text and styling of the homepage banner (above the map).
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              id="banner-enabled"
+              checked={bannerEnabled}
+              onChange={(e) => setBannerEnabled(e.target.checked)}
+              style={{ width: 18, height: 18, cursor: "pointer" }}
+            />
+            <label htmlFor="banner-enabled" style={{ fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
+              Show banner (uncheck to hide live)
+            </label>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
@@ -1893,12 +1997,13 @@ export default function AdminPage() {
             </div>
             <div>
               <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.subtitleLabel")}</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <input
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <textarea
                   placeholder={t("admin.banner.subtitlePlaceholder")}
                   value={bannerSubtitle}
                   onChange={(e) => setBannerSubtitle(e.target.value)}
-                  style={{ padding: "8px 10px", fontSize: 13, width: "100%", maxWidth: 340, flex: 1, minWidth: 200 }}
+                  rows={4}
+                  style={{ display: "block", width: "100%", maxWidth: 520, padding: "8px 10px", fontSize: 13, borderRadius: 6, border: "1px solid #374151", background: "#111827", color: "#e5e7eb", resize: "vertical", minHeight: 80 }}
                 />
                 <EmojiPickerDropdown onEmojiSelect={(emoji) => setBannerSubtitle((v) => v + emoji)} label="😀" />
               </div>
@@ -2054,6 +2159,7 @@ export default function AdminPage() {
                     ...authHeaders(),
                   },
                   body: JSON.stringify({
+                    enabled: bannerEnabled,
                     title: bannerTitle.trim() || null,
                     subtitle: bannerSubtitle.trim() || null,
                     font_family: bannerFontFamily.trim() || null,
@@ -2088,11 +2194,308 @@ export default function AdminPage() {
           </>
         )}
       </div>
+      )}
 
+      {(activePanel === "all" || activePanel === "serversBanner") && (
       <div
         style={{
           marginBottom: 12,
           border: "1px solid #243046",
+          borderLeft: "4px solid #3b82f6",
+          borderRadius: 10,
+          padding: 12,
+          background: "#10162b",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: showServersBanner ? 10 : 0,
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, color: "#60a5fa" }}>🌃 FiveM Servers Banner</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>/servers page — appears above the server list</div>
+          </div>
+          <button onClick={() => setShowServersBanner((v) => !v)}>
+            {showServersBanner ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
+          </button>
+        </div>
+        {showServersBanner && (
+          <>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+              Banner on the FiveM servers page (/servers). Toggle off to hide when nothing to announce.
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <input
+                type="checkbox"
+                id="servers-banner-enabled"
+                checked={serversBannerEnabled}
+                onChange={(e) => setServersBannerEnabled(e.target.checked)}
+                style={{ width: 18, height: 18, cursor: "pointer" }}
+              />
+              <label htmlFor="servers-banner-enabled" style={{ fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
+                Show banner on servers page
+              </label>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    placeholder="FiveM Servers"
+                    value={serversBannerTitle}
+                    onChange={(e) => setServersBannerTitle(e.target.value)}
+                    style={{ padding: "8px 10px", fontSize: 13, width: "100%", maxWidth: 340, flex: 1, minWidth: 200 }}
+                  />
+                  <EmojiPickerDropdown onEmojiSelect={(emoji) => setServersBannerTitle((v) => v + emoji)} label="😀" />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Subtitle</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <textarea
+                    placeholder="Browse RP cities, claim yours..."
+                    value={serversBannerSubtitle}
+                    onChange={(e) => setServersBannerSubtitle(e.target.value)}
+                    rows={4}
+                    style={{ display: "block", width: "100%", maxWidth: 520, padding: "8px 10px", fontSize: 13, borderRadius: 6, border: "1px solid #374151", background: "#111827", color: "#e5e7eb", resize: "vertical", minHeight: 80 }}
+                  />
+                  <EmojiPickerDropdown onEmojiSelect={(emoji) => setServersBannerSubtitle((v) => v + emoji)} label="😀" />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Format preset</div>
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const presets: Record<string, { font: string; titleSize: string; subtitleSize: string; weight: string; spacing: string; titleColor: string; subtitleColor: string; bg: string; border: string; animation: string }> = {
+                      neon: { font: "Bebas Neue", titleSize: "36", subtitleSize: "18", weight: "900", spacing: "1.2px", titleColor: "#ffffff", subtitleColor: "#67e8f9", bg: "#0f172a", border: "#22d3ee", animation: "flash" },
+                      urban: { font: "Montserrat", titleSize: "32", subtitleSize: "18", weight: "700", spacing: "0.5px", titleColor: "#fef3c7", subtitleColor: "#fbbf24", bg: "#1c1917", border: "#f59e0b", animation: "pulse" },
+                      sunset: { font: "Oswald", titleSize: "34", subtitleSize: "18", weight: "700", spacing: "1px", titleColor: "#ffffff", subtitleColor: "#fed7aa", bg: "linear-gradient(135deg,#7c2d12 0%,#c2410c 50%,#9a3412 100%)", border: "#ea580c", animation: "flash" },
+                      minimal: { font: "system-ui", titleSize: "28", subtitleSize: "16", weight: "600", spacing: "0.2px", titleColor: "#f8fafc", subtitleColor: "#94a3b8", bg: "#1e293b", border: "#475569", animation: "fade" },
+                    };
+                    const p = presets[v as keyof typeof presets];
+                    if (p) {
+                      setServersBannerFontFamily(p.font);
+                      setServersBannerTitleFontSize(p.titleSize);
+                      setServersBannerSubtitleFontSize(p.subtitleSize);
+                      setServersBannerTitleFontWeight(p.weight);
+                      setServersBannerLetterSpacing(p.spacing);
+                      setServersBannerTitleFontColor(p.titleColor);
+                      setServersBannerSubtitleColor(p.subtitleColor);
+                      setServersBannerBackgroundColor(p.bg);
+                      setServersBannerBorderColor(p.border);
+                      setServersBannerAnimation(p.animation);
+                    }
+                    e.target.value = "";
+                  }}
+                  style={{ padding: "8px 10px", fontSize: 13, minWidth: 180 }}
+                >
+                  <option value="">Apply preset…</option>
+                  <option value="neon">Neon Cyber — electric cyan on dark</option>
+                  <option value="urban">Urban Gold — amber & warm</option>
+                  <option value="sunset">Sunset — orange gradient</option>
+                  <option value="minimal">Minimal — clean slate</option>
+                </select>
+              </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Font</div>
+                  <select
+                    value={serversBannerFontFamily}
+                    onChange={(e) => setServersBannerFontFamily(e.target.value)}
+                    style={{ padding: "8px 10px", fontSize: 13, minWidth: 160 }}
+                  >
+                    {BANNER_FONTS.map((f) => (
+                      <option key={f.value || "default"} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title size (px)</div>
+                  <input
+                    type="number"
+                    placeholder="28"
+                    value={serversBannerTitleFontSize}
+                    onChange={(e) => setServersBannerTitleFontSize(e.target.value)}
+                    style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Subtitle size (px)</div>
+                  <input
+                    type="number"
+                    placeholder="16"
+                    value={serversBannerSubtitleFontSize}
+                    onChange={(e) => setServersBannerSubtitleFontSize(e.target.value)}
+                    style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title weight (400–900)</div>
+                  <input
+                    placeholder="900"
+                    value={serversBannerTitleFontWeight}
+                    onChange={(e) => setServersBannerTitleFontWeight(e.target.value)}
+                    style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Letter spacing</div>
+                  <input
+                    placeholder="0.8px"
+                    value={serversBannerLetterSpacing}
+                    onChange={(e) => setServersBannerLetterSpacing(e.target.value)}
+                    style={{ padding: "8px 10px", fontSize: 13, width: 90 }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Animation</div>
+                  <select
+                    value={serversBannerAnimation || "flash"}
+                    onChange={(e) => setServersBannerAnimation(e.target.value)}
+                    style={{ padding: "6px 8px", fontSize: 12, minWidth: 100 }}
+                  >
+                    <option value="none">None</option>
+                    <option value="flash">Flash</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="fade">Fade</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title color</div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="color"
+                      value={serversBannerTitleFontColor || "#ffffff"}
+                      onChange={(e) => setServersBannerTitleFontColor(e.target.value)}
+                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                    />
+                    <input
+                      value={serversBannerTitleFontColor}
+                      onChange={(e) => setServersBannerTitleFontColor(e.target.value)}
+                      placeholder="#ffffff"
+                      style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Subtitle color</div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="color"
+                      value={serversBannerSubtitleColor || "#fde68a"}
+                      onChange={(e) => setServersBannerSubtitleColor(e.target.value)}
+                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                    />
+                    <input
+                      value={serversBannerSubtitleColor}
+                      onChange={(e) => setServersBannerSubtitleColor(e.target.value)}
+                      placeholder="#fde68a"
+                      style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Background</div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="color"
+                      value={serversBannerBackgroundColor || "#1e293b"}
+                      onChange={(e) => setServersBannerBackgroundColor(e.target.value)}
+                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                    />
+                    <input
+                      value={serversBannerBackgroundColor}
+                      onChange={(e) => setServersBannerBackgroundColor(e.target.value)}
+                      placeholder="hex or gradient (blank=default)"
+                      style={{ padding: "6px 8px", fontSize: 12, width: 140 }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Border</div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="color"
+                      value={serversBannerBorderColor || "#3b82f6"}
+                      onChange={(e) => setServersBannerBorderColor(e.target.value)}
+                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                    />
+                    <input
+                      value={serversBannerBorderColor}
+                      onChange={(e) => setServersBannerBorderColor(e.target.value)}
+                      placeholder="#3b82f6"
+                      style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <button
+                disabled={serversBannerSaving}
+                onClick={async () => {
+                  if (!hasAuth) return;
+                  setServersBannerSaving(true);
+                  const titleSize = serversBannerTitleFontSize.trim() ? Number(serversBannerTitleFontSize) : null;
+                  const subtitleSize = serversBannerSubtitleFontSize.trim() ? Number(serversBannerSubtitleFontSize) : null;
+                  const res = await fetch("/api/site-banner-servers", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", ...authHeaders() },
+                    body: JSON.stringify({
+                      enabled: serversBannerEnabled,
+                      title: serversBannerTitle.trim() || null,
+                      subtitle: serversBannerSubtitle.trim() || null,
+                      font_family: serversBannerFontFamily.trim() || null,
+                      title_font_size: titleSize,
+                      subtitle_font_size: subtitleSize,
+                      title_font_weight: serversBannerTitleFontWeight.trim() || null,
+                      letter_spacing: serversBannerLetterSpacing.trim() || null,
+                      subtitle_color: serversBannerSubtitleColor.trim() || null,
+                      title_font_color: serversBannerTitleFontColor.trim() || null,
+                      background_color: serversBannerBackgroundColor.trim() || null,
+                      border_color: serversBannerBorderColor.trim() || null,
+                      animation: serversBannerAnimation.trim() || null,
+                    }),
+                  });
+                  setServersBannerSaving(false);
+                  if (res.ok) loadServersBanner();
+                }}
+                style={{
+                  padding: "8px 14px",
+                  fontSize: 13,
+                  background: "#2563eb",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  alignSelf: "flex-start",
+                }}
+              >
+                {serversBannerSaving ? "..." : "Save"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      )}
+
+      {(activePanel === "all" || activePanel === "liveChats") && (
+      <div
+        style={{
+          marginBottom: 12,
+          border: "1px solid #243046",
+          borderLeft: "4px solid #a855f7",
           borderRadius: 10,
           padding: 12,
           background: "#10162b",
@@ -2104,9 +2507,14 @@ export default function AdminPage() {
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: showLiveChats ? 10 : 0,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <div style={{ fontWeight: 700 }}>Live Chats</div>
+          <div>
+            <div style={{ fontWeight: 700, color: "#c084fc" }}>💬 Live Chats</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>View and reply to visitor messages — replies sync to Discord</div>
+          </div>
           <button onClick={() => setShowLiveChats((v) => !v)}>
             {showLiveChats ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
           </button>
@@ -2221,7 +2629,9 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+      )}
 
+      {(activePanel === "all" || activePanel === "editMlos") && (
       <div
         style={{
           marginBottom: 12,
@@ -2570,11 +2980,14 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+      )}
 
+      {(activePanel === "all" || activePanel === "creatorTiles") && (
       <div
         style={{
           marginBottom: 12,
           border: "1px solid #243046",
+          borderLeft: "4px solid #14b8a6",
           borderRadius: 10,
           padding: 12,
           background: "#10162b",
@@ -2586,9 +2999,14 @@ export default function AdminPage() {
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: showCreatorTiles ? 10 : 0,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <div style={{ fontWeight: 700 }}>Creator Tiles</div>
+          <div>
+            <div style={{ fontWeight: 700, color: "#2dd4bf" }}>🎨 Creator Tiles</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Manage creator partner tiles — banners, logos, links on creators page</div>
+          </div>
           <button onClick={() => setShowCreatorTiles((v) => !v)}>
             {showCreatorTiles ? "Hide ▲" : "Show ▼"}
           </button>
@@ -2678,11 +3096,15 @@ export default function AdminPage() {
           />
         )}
       </div>
+      )}
 
+      {(activePanel === "all" || activePanel === "creatorSpotlight") && (
       <div
         style={{
           marginTop: 16,
+          marginBottom: 12,
           border: "1px solid #243046",
+          borderLeft: "4px solid #ec4899",
           borderRadius: 10,
           padding: 12,
           background: "#10162b",
@@ -2694,9 +3116,14 @@ export default function AdminPage() {
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: showCreatorSpotlight ? 10 : 0,
+          flexWrap: "wrap",
+          gap: 8,
           }}
         >
-          <div style={{ fontWeight: 700 }}>Creator Spotlight (homepage)</div>
+          <div>
+            <div style={{ fontWeight: 700, color: "#ec4899" }}>⭐ Creator Spotlight</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Homepage — featured creators carousel and partner tiles</div>
+          </div>
           <button type="button" onClick={() => setShowCreatorSpotlight((v) => !v)}>
             {showCreatorSpotlight ? "Hide ▲" : "Show ▼"}
           </button>
@@ -3007,17 +3434,34 @@ export default function AdminPage() {
           );
         })()}
       </div>
+      )}
 
-      <div style={{ marginTop: 16 }}>
+      {(activePanel === "all" || activePanel === "review") && (
+      <div
+        style={{
+          marginTop: 16,
+          marginBottom: 12,
+          border: "1px solid #243046",
+          borderLeft: "4px solid #f97316",
+          borderRadius: 10,
+          padding: 12,
+          background: "#10162b",
+        }}
+      >
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: showReview ? 8 : 0,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <div style={{ fontWeight: 700 }}>{t("admin.requests.title")}</div>
+          <div>
+            <div style={{ fontWeight: 700, color: "#fb923c" }}>📋 {t("admin.requests.title")}</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Review and approve MLO submission requests from visitors</div>
+          </div>
           <button onClick={() => setShowReview((v) => !v)}>
             {showReview ? "Hide ▲" : "Show ▼"}
           </button>
@@ -3133,11 +3577,14 @@ export default function AdminPage() {
           </>
         )}
       </div>
+      )}
 
+      {(activePanel === "all" || activePanel === "servers") && (
       <div
         style={{
           marginBottom: 12,
           border: "1px solid #243046",
+          borderLeft: "4px solid #6366f1",
           borderRadius: 10,
           padding: 12,
           background: "#10162b",
@@ -3149,21 +3596,75 @@ export default function AdminPage() {
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: showServers ? 10 : 0,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <div style={{ fontWeight: 700 }}>FiveM Servers</div>
+          <div>
+            <div style={{ fontWeight: 700, color: "#818cf8" }}>🌐 FiveM Servers</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Manage server listings — add, edit, claim status, sync to Discord</div>
+          </div>
           <button onClick={() => setShowServers((v) => !v)}>
             {showServers ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
           </button>
         </div>
         {showServers && (
           <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-            Manage FiveM servers. OG badge: {servers.filter((s: any) => s.og_server).length}/20. Verified: trust badge. Delete spam.
+            Manage FiveM servers. Claimed: {servers.filter((s: any) => s.claimed_by_user_id || s.grandfathered || s.user_id).length} • Unclaimed: {servers.filter((s: any) => !s.claimed_by_user_id && !s.grandfathered && !s.user_id).length} • OG badge: {servers.filter((s: any) => s.og_server).length}/20. Verified: trust badge. Delete spam.
           </div>
         )}
         {showServers && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>Show:</span>
+                <button
+                  type="button"
+                  onClick={() => setServerClaimFilter("all")}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    borderRadius: 6,
+                    border: "1px solid #374151",
+                    background: serverClaimFilter === "all" ? "#374151" : "transparent",
+                    color: serverClaimFilter === "all" ? "#fff" : "#9ca3af",
+                    cursor: "pointer",
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServerClaimFilter("claimed")}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    borderRadius: 6,
+                    border: "1px solid rgba(34, 197, 94, 0.5)",
+                    background: serverClaimFilter === "claimed" ? "rgba(34, 197, 94, 0.3)" : "transparent",
+                    color: serverClaimFilter === "claimed" ? "#22c55e" : "#22c55e",
+                    cursor: "pointer",
+                    opacity: serverClaimFilter === "claimed" ? 1 : 0.7,
+                  }}
+                >
+                  Claimed
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServerClaimFilter("unclaimed")}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    borderRadius: 6,
+                    border: "1px solid #4b5563",
+                    background: serverClaimFilter === "unclaimed" ? "#374151" : "transparent",
+                    color: serverClaimFilter === "unclaimed" ? "#fff" : "#9ca3af",
+                    cursor: "pointer",
+                  }}
+                >
+                  Unclaimed
+                </button>
+              </div>
               <input
                 placeholder="Search servers..."
                 value={serverSearch}
@@ -3247,6 +3748,9 @@ export default function AdminPage() {
               )}
               {servers
                 .filter((s: any) => {
+                  const isClaimed = !!(s.claimed_by_user_id || s.grandfathered || s.user_id);
+                  if (serverClaimFilter === "claimed" && !isClaimed) return false;
+                  if (serverClaimFilter === "unclaimed" && isClaimed) return false;
                   if (!serverSearch.trim()) return true;
                   const q = serverSearch.trim().toLowerCase();
                   return (
@@ -3255,6 +3759,13 @@ export default function AdminPage() {
                     (s.cfx_id || "").toLowerCase().includes(q) ||
                     (s.connect_url || "").toLowerCase().includes(q)
                   );
+                })
+                .sort((a: any, b: any) => {
+                  const aClaimed = !!(a.claimed_by_user_id || a.grandfathered || a.user_id);
+                  const bClaimed = !!(b.claimed_by_user_id || b.grandfathered || b.user_id);
+                  if (aClaimed && !bClaimed) return -1;
+                  if (!aClaimed && bClaimed) return 1;
+                  return 0;
                 })
                 .map((s: any, idx: number, arr: any[]) => (
                   <div
@@ -3270,8 +3781,21 @@ export default function AdminPage() {
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         {s.server_name}
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            background: (s.claimed_by_user_id || s.grandfathered || s.user_id) ? "rgba(34, 197, 94, 0.2)" : "rgba(107, 114, 128, 0.3)",
+                            color: (s.claimed_by_user_id || s.grandfathered || s.user_id) ? "#22c55e" : "#9ca3af",
+                            border: `1px solid ${(s.claimed_by_user_id || s.grandfathered || s.user_id) ? "rgba(34, 197, 94, 0.5)" : "rgba(107, 114, 128, 0.5)"}`,
+                          }}
+                        >
+                          {(s.claimed_by_user_id || s.grandfathered || s.user_id) ? "Claimed" : "Unclaimed"}
+                        </span>
                       </div>
                       {s.owner_name && (
                         <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
@@ -3292,6 +3816,22 @@ export default function AdminPage() {
                       )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                      <a
+                        href={`/servers/${s.id}/edit`}
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: 12,
+                          borderRadius: 6,
+                          background: "#1e3a5f",
+                          color: "#93c5fd",
+                          border: "1px solid #3b82f6",
+                          textDecoration: "none",
+                          flexShrink: 0,
+                        }}
+                        title="Edit server details"
+                      >
+                        Edit
+                      </a>
                       <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, cursor: "pointer" }}>
                         <input
                           type="checkbox"
@@ -3334,6 +3874,10 @@ export default function AdminPage() {
           </>
         )}
       </div>
+      )}
+
+      </>
+      )}
 
       <div style={{ height: "70vh", marginTop: 12 }}>
         <Map

@@ -494,7 +494,7 @@ export default function SubmitServerPage() {
                   <input
                     value={createUrl}
                     onChange={(e) => setCreateUrl(e.target.value)}
-                    placeholder="cfx.re/join/xxxxx or direct IP"
+                    placeholder="cfx.re/join/xxxxx or servers.fivem.net/.../detail/xxxxx"
                     style={inputStyle}
                   />
                 </div>

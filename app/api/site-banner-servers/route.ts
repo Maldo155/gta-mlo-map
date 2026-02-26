@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { requireAdmin } from "@/app/lib/adminAuth";
 
-const TABLE = "site_banner";
+const TABLE = "site_banner_servers";
 
 const STYLE_KEYS = [
   "font_family",
@@ -34,13 +34,17 @@ export async function GET() {
   }
 
   if (!data) {
-    return NextResponse.json({ title: null, subtitle: null, enabled: true });
+    return NextResponse.json({
+      title: null,
+      subtitle: null,
+      enabled: false,
+    });
   }
 
   const out: Record<string, unknown> = {
     title: data.title || null,
     subtitle: data.subtitle || null,
-    enabled: (data as Record<string, unknown>).enabled !== false,
+    enabled: data.enabled === true,
   };
   for (const k of STYLE_KEYS) {
     const v = (data as Record<string, unknown>)[k];
@@ -99,9 +103,9 @@ export async function PATCH(req: Request) {
   } else {
     const row: Record<string, unknown> = {
       id: 1,
-      title: title !== undefined ? title : "Site Status: Early Access",
-      subtitle: subtitle !== undefined ? subtitle : "The site is live, but we're still refining the design.",
-      enabled: body.enabled !== false,
+      title: title || null,
+      subtitle: subtitle || null,
+      enabled: body.enabled === true,
       font_family: updates.font_family ?? null,
       title_font_size: updates.title_font_size ?? 32,
       subtitle_font_size: updates.subtitle_font_size ?? 20,
