@@ -28,8 +28,10 @@ export async function GET(req: Request) {
   const result: Record<string, { players: number; max: number } | null> = {};
   const toFetch: string[] = [];
 
+  const codeLower = (x: string) => x.toLowerCase();
   for (const c of codes) {
-    const cached = cache.get(c);
+    const key = codeLower(c);
+    const cached = cache.get(key);
     if (cached && cached.expires > now) {
       result[c] = cached.data;
     } else {
@@ -48,19 +50,24 @@ export async function GET(req: Request) {
           if (!res.ok) return { code: c, data: null };
           const json = await res.json();
           const d = json.Data ?? json;
+          // FiveM API: clients (common), selfReportedClients, players.count, players.length, Players
           const players =
-            typeof d.players?.count === "number" ? d.players.count
+            typeof d.clients === "number" ? d.clients
+            : typeof json.selfReportedClients === "number" ? json.selfReportedClients
+            : typeof d.players?.count === "number" ? d.players.count
+            : Array.isArray(d.players) ? d.players.length
             : typeof d.Players === "number" ? d.Players
-            : typeof d.clients === "number" ? d.clients
             : typeof json.clients === "number" ? json.clients
             : 0;
+          // FiveM API: sv_maxclients, svMaxclients, slots
           const max =
-            typeof d.slots === "number" ? d.slots
-            : typeof d.sv_maxclients === "number" ? d.sv_maxclients
+            typeof d.sv_maxclients === "number" ? d.sv_maxclients
+            : typeof d.svMaxclients === "number" ? d.svMaxclients
+            : typeof d.slots === "number" ? d.slots
             : typeof json.sv_maxclients === "number" ? json.sv_maxclients
             : 0;
           const data = { players, max };
-          cache.set(c, { data, expires: now + CACHE_MS });
+          cache.set(c.toLowerCase(), { data, expires: now + CACHE_MS });
           return { code: c, data };
         } catch {
           return { code: c, data: null };
@@ -72,8 +79,14 @@ export async function GET(req: Request) {
     }
   }
 
-  if (codes.length === 1) {
-    return NextResponse.json(result[codes[0]] ?? null);
+  // Normalize keys to lowercase so client lookups (cfxCode.toLowerCase()) match
+  const normalized: Record<string, { players: number; max: number } | null> = {};
+  for (const [k, v] of Object.entries(result)) {
+    normalized[k.toLowerCase()] = v;
   }
-  return NextResponse.json(result);
+
+  if (codes.length === 1) {
+    return NextResponse.json(normalized[codes[0].toLowerCase()] ?? null);
+  }
+  return NextResponse.json(normalized);
 }
