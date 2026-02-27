@@ -309,6 +309,7 @@ export default function HomeGate({
         className="home-gate-tiles"
         style={{
           display: "flex",
+          flexDirection: "row",
           gap: 24,
           flexWrap: "wrap",
           justifyContent: "center",

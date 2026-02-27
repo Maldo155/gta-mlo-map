@@ -268,11 +268,9 @@ body:has(.gate-page) .site-footer {
 
 .gate-language-wrap {
   z-index: 10;
-  background: rgba(10, 12, 16, 0.97);
+  background: transparent;
   padding-left: max(12px, env(safe-area-inset-left, 0));
   padding-right: max(12px, env(safe-area-inset-right, 0));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Tile links: full width, block, touch-friendly */
@@ -284,7 +282,21 @@ body:has(.gate-page) .site-footer {
   touch-action: manipulation;
 }
 
-@media (max-width: 768px) {
+/* Gate: DEFAULT = horizontal row, map in middle (desktop/tablet) */
+.home-gate-tiles {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+}
+/* Let tiles shrink so 3 fit in one row on desktop/tablet (401px+) */
+@media (min-width: 401px) {
+  .home-gate-tile {
+    flex: 1 1 0 !important;
+    min-width: 180px !important;
+  }
+}
+
+/* Gate: stack vertically ONLY on small phones (≤400px); desktop/tablet = row */
+@media (max-width: 400px) {
   .gate-page-content-wrap {
     justify-content: flex-start !important;
     min-height: auto !important;
@@ -362,7 +374,7 @@ body:has(.gate-page) .site-footer {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 400px) {
   .home-gate-inner {
     padding: 12px 10px 20px !important;
     gap: 14px !important;

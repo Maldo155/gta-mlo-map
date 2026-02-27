@@ -908,7 +908,8 @@ function GatePage() {
     Promise.all([
       fetch("/api/mlo", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/servers", { cache: "no-store" }).then((r) => r.json()),
-    ]).then(([mloRes, serverRes]) => {
+    ])
+    .then(([mloRes, serverRes]) => {
       const mlos = Array.isArray(mloRes.mlos) ? mloRes.mlos : [];
       const creators = new Set(mlos.map((m: { creator?: string }) => (m.creator || "").trim()).filter(Boolean));
       setMlosCount(mlos.length);
@@ -930,6 +931,9 @@ function GatePage() {
           getServerImageUrl(s)!
       );
       setServerImages(srvImgUrls);
+    })
+    .catch(() => {
+      /* API unavailable (dev, network, etc) – keep existing counts */
     });
   }
 
@@ -970,13 +974,13 @@ function GatePage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "flex-start",
         }}
       >
         <div
           className="gate-language-wrap"
           style={{
-            position: "sticky",
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
@@ -993,13 +997,24 @@ function GatePage() {
           <DiscordLink />
           <RedditLink />
         </div>
-        <HomeGate
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+          }}
+        >
+          <HomeGate
           mlosCount={mlosCount}
           creatorsCount={creatorsCount}
           serversCount={serversCount}
           mloImages={mloImages}
           serverImages={serverImages}
         />
+        </div>
       </div>
     </main>
   );
