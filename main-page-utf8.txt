@@ -1,17 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AuthLink from "./components/AuthLink";
 import DiscordLink from "./components/DiscordLink";
-import RedditLink from "./components/RedditLink";
 import LanguageSelect from "./components/LanguageSelect";
 import SiteHeader from "./components/SiteHeader";
-import HomeSplitContent from "./components/HomeSplitContent";
-import HomeGate from "./components/HomeGate";
 import { useLanguage } from "./components/LanguageProvider";
-import type { Server } from "./lib/serverTags";
 
 type Mlo = {
   id: string;
@@ -38,7 +34,7 @@ type RequestItem = {
   created_at?: string;
 };
 
-export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "citiesOnly" }) {
+function HomeContent() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   // Recovery: if Supabase redirects to /?code=xxx instead of /auth/callback, redirect to callback
@@ -56,7 +52,7 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
   }, []);
 
   const [mlos, setMlos] = useState<Mlo[]>([]);
-  const [servers, setServers] = useState<Server[]>([]);
+  const [serversCount, setServersCount] = useState(0);
   const [banner, setBanner] = useState<{
     title: string | null;
     subtitle: string | null;
@@ -150,7 +146,7 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
   useEffect(() => {
     fetch("/api/servers", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setServers(d.servers || []));
+      .then((d) => setServersCount((d.servers || []).length));
   }, []);
 
   useEffect(() => {
@@ -173,7 +169,7 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
         .catch(() => setSpotlightCreatorsData([]));
     }
     fetchSpotlight();
-    const interval = setInterval(fetchSpotlight, 60_000);
+    const interval = setInterval(fetchSpotlight, 5_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -185,7 +181,7 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
         .catch(() => setPartnersCreatorsData([]));
     }
     fetchPartners();
-    const interval = setInterval(fetchPartners, 60_000);
+    const interval = setInterval(fetchPartners, 5_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -207,7 +203,7 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
   }, []);
 
   const featuredMlos = useMemo(() => {
-    return [...mlos].slice(0, 10);
+    return [...mlos].slice(0, 6);
   }, [mlos]);
 
   const conveyorMlos = useMemo(() => {
@@ -219,24 +215,6 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
     }
     return shuffled.slice(0, 25);
   }, [mlos]);
-
-  const conveyorServers = useMemo(() => {
-    const claimed = servers.filter((s) => s.grandfathered === true || s.claimed_by_user_id);
-    const withPics = claimed.filter(
-      (s) =>
-        (s.banner_url && s.banner_url.trim()) ||
-        (s.logo_url && s.logo_url.trim()) ||
-        (s.thumbnail_url && s.thumbnail_url.trim()) ||
-        (Array.isArray(s.gallery_images) && s.gallery_images.length > 0)
-    );
-    if (!withPics.length) return [];
-    const shuffled = [...withPics];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, 20);
-  }, [servers]);
 
   const topCreators = useMemo(() => {
     const counts = new Map<string, number>();
@@ -607,22 +585,599 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
         </div>
       </section>
 
-      <section className="home-section-wrap" style={{ width: "100%", margin: 0, padding: 0 }}>
-        <HomeSplitContent
-          t={t}
-          mlos={mlos}
-          featuredMlos={featuredMlos}
-          conveyorMlos={conveyorMlos}
-          servers={servers}
-          conveyorServers={conveyorServers}
-          displayedPartners={displayedPartners}
-          partnerConveyorItems={partnerConveyorItems}
-          displayedSpotlight={displayedSpotlight}
-          showPartnersSection={SHOW_PARTNERS_SECTION}
-          showPartnersConveyor={SHOW_PARTNERS_CONVEYOR}
-          conveyorSpeedSec={MLO_CONVEYOR_SPEED_SEC}
-          variant={variant}
-        />
+      <section className="home-section-wrap" style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 24px" }}>
+        <div
+          className="home-tiles-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 16,
+          }}
+        >
+          <a href="/map" style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                border: "1px solid #243046",
+                borderRadius: 14,
+                padding: 18,
+                background: "rgba(16, 22, 43, 0.8)",
+                minHeight: 140,
+              }}
+              className="card"
+            >
+              <div
+                className="card-tile-thumb"
+                style={{
+                  height: 80,
+                  borderRadius: 10,
+                  backgroundImage: "url(/maps/find-mlos-tile.png)",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center center",
+                  marginBottom: 10,
+                  border: "1px solid #243046",
+                  opacity: 0.88,
+                }}
+              />
+              <div style={{ fontSize: 12, opacity: 0.7 }}>
+                {t("home.tiles.map.title")}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginTop: 6 }}>
+                {t("home.tiles.map.subtitle")} ({mlos.length})
+              </div>
+              <div style={{ marginTop: 8, color: "#9ca3af", fontSize: 13 }}>
+                {t("home.tiles.map.desc")}
+              </div>
+            </div>
+          </a>
+          <a href="/servers" style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                border: "1px solid #243046",
+                borderRadius: 14,
+                padding: 18,
+                background: "rgba(16, 22, 43, 0.8)",
+                minHeight: 140,
+              }}
+              className="card"
+            >
+              <div
+                style={{
+                  height: 80,
+                  borderRadius: 10,
+                  backgroundImage: "url(/maps/find-servers-tile.png)",
+                  backgroundSize: "130%",
+                  backgroundPosition: "center center",
+                  marginBottom: 10,
+                  border: "1px solid #243046",
+                  opacity: 0.88,
+                }}
+              />
+              <div style={{ fontSize: 12, opacity: 0.7 }}>
+                {t("home.tiles.servers.title")}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginTop: 6 }}>
+                {t("home.tiles.servers.subtitle")} ({serversCount})
+              </div>
+              <div style={{ marginTop: 8, color: "#9ca3af", fontSize: 13 }}>
+                {t("home.tiles.servers.desc")}
+              </div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <section className="home-section-wrap" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 24px" }}>
+        <div
+          className="home-spotlight-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) 320px",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 800,
+                letterSpacing: 0.4,
+                marginBottom: 4,
+              }}
+            >
+              {t("home.fresh.label")}
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gap: 12,
+              }}
+            >
+              {featuredMlos.length === 0 && (
+                <div style={{ opacity: 0.7, fontSize: 13 }}>
+                  {t("home.fresh.empty")}
+                </div>
+              )}
+              {featuredMlos.map((mlo) => (
+                <div
+                  key={mlo.id}
+                  style={{
+                    border: "1px solid #243046",
+                    borderRadius: 14,
+                    padding: 16,
+                    background: "#10162b",
+                    minHeight: 140,
+                  }}
+                  className="card"
+                >
+                  <img
+                    src={mlo.image_url || "/maps/gta-5-map-atlas-hd.jpg"}
+                    alt=""
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: 120,
+                      objectFit: "cover",
+                      borderRadius: 10,
+                      marginBottom: 10,
+                      border: "1px solid #243046",
+                      opacity: 0.9,
+                      display: "block",
+                    }}
+                  />
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    {t("home.mlo.label")}
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginTop: 6 }}>
+                    {mlo.name || t("home.mlo.untitled")}
+                  </div>
+                  <div style={{ marginTop: 6, color: "#9ca3af", fontSize: 13 }}>
+                    {mlo.creator || t("home.mlo.unknownCreator")}
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <a
+                      href={`/map?mloId=${encodeURIComponent(
+                        mlo.id
+                      )}&highlight=1${
+                        mlo.x != null && mlo.y != null
+                          ? `&x=${encodeURIComponent(
+                              mlo.x
+                            )}&y=${encodeURIComponent(mlo.y)}`
+                          : ""
+                      }`}
+                      style={{ color: "#93c5fd", fontSize: 12 }}
+                    >
+                      {t("home.mlo.viewMap")}
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {mlos.length > 0 && (
+              <>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    letterSpacing: 0.3,
+                    opacity: 0.9,
+                  }}
+                >
+                  {t("home.conveyor.title")}
+                </div>
+                <div
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    overflow: "hidden",
+                    maskImage:
+                      "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
+                    WebkitMaskImage:
+                      "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
+                    maskSize: "100% 100%",
+                  }}
+                >
+                  <div
+                    className="mlo-conveyor-track"
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      animation: `mloConveyorScroll ${MLO_CONVEYOR_SPEED_SEC}s linear infinite`,
+                      width: "max-content",
+                    }}
+                  >
+                    {[...conveyorMlos, ...conveyorMlos].map((mlo, idx) => (
+                      <a
+                        key={`${mlo.id}-dup-${idx}`}
+                        href={`/map?mloId=${encodeURIComponent(mlo.id)}&highlight=1${
+                          mlo.x != null && mlo.y != null
+                            ? `&x=${encodeURIComponent(mlo.x)}&y=${encodeURIComponent(mlo.y)}`
+                            : ""
+                        }`}
+                        className="mlo-conveyor-card card"
+                        style={{
+                          flexShrink: 0,
+                          width: 200,
+                          border: "1px solid #243046",
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          background: "#10162b",
+                          textDecoration: "none",
+                          color: "inherit",
+                          display: "block",
+                        }}
+                      >
+                        <img
+                          src={mlo.image_url || "/maps/gta-5-map-atlas-hd.jpg"}
+                          alt=""
+                          loading="lazy"
+                          style={{
+                            width: "100%",
+                            height: 100,
+                            objectFit: "cover",
+                            borderBottom: "1px solid #243046",
+                            display: "block",
+                          }}
+                        />
+                        <div style={{ padding: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700 }}>
+                            {mlo.name || t("home.mlo.untitled")}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                            {mlo.creator || t("home.mlo.unknownCreator")}
+                          </div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {SHOW_PARTNERS_SECTION && (
+              <>
+                <div
+                  style={{
+                    border: "2px solid rgba(251, 191, 36, 0.7)",
+                    borderRadius: 18,
+                    padding: "20px 24px",
+                    background:
+                      "linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(245, 158, 11, 0.12))",
+                    boxShadow: "0 16px 40px rgba(251, 191, 36, 0.25), 0 0 60px rgba(251, 191, 36, 0.08)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 800,
+                      letterSpacing: 0.5,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        fontSize: 18,
+                        fontWeight: 800,
+                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(245, 158, 11, 0.35))",
+                        border: "1px solid rgba(251, 191, 36, 0.7)",
+                        color: "#fde68a",
+                        boxShadow: "0 0 16px rgba(251, 191, 36, 0.5)",
+                      }}
+                    >
+                      Γÿà
+                    </span>
+                    {t("home.partners.label")}
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        fontSize: 18,
+                        fontWeight: 800,
+                        background: "linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(245, 158, 11, 0.35))",
+                        border: "1px solid rgba(251, 191, 36, 0.7)",
+                        color: "#fde68a",
+                        boxShadow: "0 0 16px rgba(251, 191, 36, 0.5)",
+                      }}
+                    >
+                      Γÿà
+                    </span>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    border: "2px solid rgba(251, 191, 36, 0.5)",
+                    borderRadius: 18,
+                    padding: 24,
+                    background: "#0d1324",
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  {displayedPartners.length > 0 ? (
+                    SHOW_PARTNERS_CONVEYOR ? (
+                      <div
+                        style={{
+                          position: "relative",
+                          width: "100%",
+                          overflow: "hidden",
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <div
+                          className="partner-conveyor-viewport"
+                          style={{
+                            width: 328,
+                            flexShrink: 0,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            className="partner-conveyor-track"
+                            style={{
+                              display: "flex",
+                              gap: 12,
+                              animation: `partnerConveyorScroll ${MLO_CONVEYOR_SPEED_SEC}s linear infinite`,
+                              width: "max-content",
+                            }}
+                          >
+                            {[...partnerConveyorItems, ...partnerConveyorItems].map((creator, idx) => (
+                              <a
+                                key={`${creator.creator_key}-${idx}`}
+                                href="/creators"
+                                className="partner-conveyor-card"
+                                style={{
+                                  flexShrink: 0,
+                                  width: 320,
+                                  border: "2px solid rgba(251, 191, 36, 0.5)",
+                                  borderRadius: 16,
+                                  overflow: "hidden",
+                                  backgroundColor: "#0f1528",
+                                  textDecoration: "none",
+                                  color: "inherit",
+                                  padding: 24,
+                                  boxSizing: "border-box",
+                                  display: "block",
+                                  boxShadow: "0 8px 24px rgba(251, 191, 36, 0.15)",
+                                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    minHeight: 140,
+                                  }}
+                                >
+                                  {creator.logo_url ? (
+                                    <img
+                                      src={creator.logo_url}
+                                      alt=""
+                                      loading="lazy"
+                                      style={{
+                                        maxWidth: `${creator.spotlight_logo_size}%`,
+                                        maxHeight: 96,
+                                        width: "auto",
+                                        height: "auto",
+                                        objectFit: "contain",
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  ) : (
+                                    <span style={{ fontWeight: 700, fontSize: 20 }}>{creator.displayName}</span>
+                                  )}
+                                </div>
+                                <div style={{ textAlign: "center", fontSize: 14, opacity: 0.9, marginTop: 8, fontWeight: 600 }}>
+                                  {t("home.partners.count", { count: creator.count })}
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {displayedPartners.map((creator) => (
+                          <a
+                            key={creator.creator_key}
+                            href="/creators"
+                            style={{
+                              display: "block",
+                              position: "relative",
+                              border: "1px solid rgba(251, 191, 36, 0.4)",
+                              borderRadius: 12,
+                              overflow: "hidden",
+                              minHeight: 80,
+                              backgroundColor: "#0f1528",
+                              textDecoration: "none",
+                              color: "inherit",
+                              padding: 12,
+                              boxSizing: "border-box",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                minHeight: 56,
+                              }}
+                            >
+                              {creator.logo_url ? (
+                                <img
+                                  src={creator.logo_url}
+                                  alt=""
+                                  loading="lazy"
+                                  style={{
+                                    maxWidth: `${creator.spotlight_logo_size}%`,
+                                    maxHeight: 48,
+                                    width: "auto",
+                                    height: "auto",
+                                    objectFit: "contain",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                              ) : (
+                                <span style={{ fontWeight: 700, fontSize: 14 }}>{creator.displayName}</span>
+                              )}
+                            </div>
+                            <div style={{ textAlign: "center", fontSize: 11, opacity: 0.85, marginTop: 4 }}>
+                              {t("home.partners.count", { count: creator.count })}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ opacity: 0.7, fontSize: 13 }}>
+                      {t("home.partners.empty")}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            <div
+              style={{
+                border: "1px solid #c7ff4a",
+                borderRadius: 14,
+                padding: 12,
+                background:
+                  "linear-gradient(135deg, rgba(34,211,238,0.08), rgba(111,95,231,0.12))",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.35)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 800,
+                  letterSpacing: 0.4,
+                  marginBottom: 8,
+                }}
+              >
+                {t("home.spotlight.label")}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800 }}>
+                {t("home.spotlight.title")}
+              </div>
+            </div>
+            <div
+              style={{
+                border: "1px solid #c7ff4a",
+                borderRadius: 14,
+                padding: 12,
+                background: "#10162b",
+              }}
+            >
+              {displayedSpotlight.length > 0 ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {displayedSpotlight.map((creator) => (
+                    <a
+                      key={creator.creator_key}
+                      href="/creators"
+                      style={{
+                        display: "block",
+                        position: "relative",
+                        border: "1px solid #243046",
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        minHeight: 80,
+                        backgroundColor: "#0f1528",
+                        textDecoration: "none",
+                        color: "inherit",
+                        padding: 12,
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: 56,
+                        }}
+                      >
+                        {creator.logo_url ? (
+                          <img
+                            key={creator.logo_url}
+                            src={creator.logo_url}
+                            alt=""
+                            loading="lazy"
+                            style={{
+                              maxWidth: `${creator.spotlight_logo_size}%`,
+                              maxHeight: 48,
+                              width: "auto",
+                              height: "auto",
+                              objectFit: "contain",
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{creator.displayName}</span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "center", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+                        {(creator as { verified_creator?: boolean }).verified_creator && (
+                          <span
+                            title="Verified MLO Creator"
+                            style={{
+                              display: "inline-flex",
+                              padding: "1px 6px",
+                              borderRadius: 999,
+                              fontSize: 9,
+                              fontWeight: 700,
+                              background: "rgba(59, 130, 246, 0.25)",
+                              border: "1px solid rgba(59, 130, 246, 0.5)",
+                              color: "#93c5fd",
+                            }}
+                          >
+                            Γ£ô
+                          </span>
+                        )}
+                        {(creator as { partnership?: boolean }).partnership && (
+                          <span
+                            title="Partner"
+                            style={{
+                              display: "inline-flex",
+                              padding: "1px 6px",
+                              borderRadius: 999,
+                              fontSize: 9,
+                              fontWeight: 800,
+                              background: "linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.3))",
+                              border: "1px solid rgba(251, 191, 36, 0.6)",
+                              color: "#fde68a",
+                              boxShadow: "0 0 10px rgba(251, 191, 36, 0.4)",
+                            }}
+                          >
+                            Γÿà
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ textAlign: "center", fontSize: 11, opacity: 0.85, marginTop: 4 }}>
+                        {t("home.spotlight.count", { count: creator.count })}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ opacity: 0.7, fontSize: 13 }}>
+                  {t("home.spotlight.empty")}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
 
       <style>{`
@@ -634,17 +1189,9 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
-        @keyframes serverConveyorScroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
         .partner-conveyor-card:hover {
           transform: scale(1.02);
           box-shadow: 0 12px 32px rgba(251, 191, 36, 0.25) !important;
-        }
-        .server-conveyor-card:hover {
-          transform: scale(1.02);
-          box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
         }
       `}</style>
 
@@ -847,10 +1394,10 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
                 )}
                 <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                   <button onClick={() => voteRequest(req.id, "up")}>
-                    👍 {req.upvotes ?? 0}
+                    ≡ƒæì {req.upvotes ?? 0}
                   </button>
                   <button onClick={() => voteRequest(req.id, "down")}>
-                    👎 {req.downvotes ?? 0}
+                    ≡ƒæÄ {req.downvotes ?? 0}
                   </button>
                   {votedRequests[req.id] && (
                     <span style={{ fontSize: 11, opacity: 0.6 }}>
@@ -875,136 +1422,6 @@ export function HomeContentFull({ variant }: { variant: "split" | "mloOnly" | "c
   );
 }
 
-function getServerImageUrl(s: { banner_url?: string | null; logo_url?: string | null; thumbnail_url?: string | null; gallery_images?: string[] | null }): string | null {
-  if (s.banner_url?.trim()) return s.banner_url;
-  if (s.logo_url?.trim()) return s.logo_url;
-  if (s.thumbnail_url?.trim()) return s.thumbnail_url;
-  if (Array.isArray(s.gallery_images) && s.gallery_images.length > 0) return s.gallery_images[0];
-  return null;
-}
-
-function GatePage() {
-  const searchParams = useSearchParams();
-  const [mlosCount, setMlosCount] = useState<number | undefined>();
-  const [creatorsCount, setCreatorsCount] = useState<number | undefined>();
-  const [serversCount, setServersCount] = useState<number | undefined>();
-  const [mloImages, setMloImages] = useState<string[]>([]);
-  const [serverImages, setServerImages] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (code) {
-      const next = params.get("next") || "/servers";
-      window.location.replace(
-        `${window.location.origin}/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
-      );
-      return;
-    }
-  }, [searchParams]);
-
-  function fetchGateCounts() {
-    Promise.all([
-      fetch("/api/mlo", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/servers", { cache: "no-store" }).then((r) => r.json()),
-    ]).then(([mloRes, serverRes]) => {
-      const mlos = Array.isArray(mloRes.mlos) ? mloRes.mlos : [];
-      const creators = new Set(mlos.map((m: { creator?: string }) => (m.creator || "").trim()).filter(Boolean));
-      setMlosCount(mlos.length);
-      setCreatorsCount(creators.size);
-
-      const mloImgUrls = mlos
-        .filter((m: { image_url?: string | null }) => m.image_url?.trim())
-        .map((m: { image_url: string }) => m.image_url);
-      setMloImages(mloImgUrls);
-
-      const servers = Array.isArray(serverRes.servers) ? serverRes.servers : [];
-      setServersCount(servers.length);
-      const claimedWithPic = servers.filter(
-        (s: { grandfathered?: boolean; claimed_by_user_id?: string | null; banner_url?: string | null; logo_url?: string | null; thumbnail_url?: string | null; gallery_images?: string[] | null }) =>
-          (s.grandfathered === true || !!s.claimed_by_user_id) && getServerImageUrl(s)
-      );
-      const srvImgUrls = claimedWithPic.map(
-        (s: { grandfathered?: boolean; claimed_by_user_id?: string | null; banner_url?: string | null; logo_url?: string | null; thumbnail_url?: string | null; gallery_images?: string[] | null }) =>
-          getServerImageUrl(s)!
-      );
-      setServerImages(srvImgUrls);
-    });
-  }
-
-  useEffect(() => {
-    fetchGateCounts();
-    const interval = setInterval(fetchGateCounts, 15_000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <main
-      className="home-root gate-page"
-      style={{
-        minHeight: "100vh",
-        color: "white",
-        position: "relative",
-        overflowY: "auto",
-        overflowX: "hidden",
-        WebkitOverflowScrolling: "touch",
-      }}
-    >
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: `linear-gradient(180deg, rgba(4, 6, 10, 0.68) 0%, rgba(4, 6, 10, 0.78) 50%, rgba(2, 4, 8, 0.92) 100%), #0a0c10 url("/api/home-bg") no-repeat center top / cover`,
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        className="gate-page-content-wrap"
-        style={{
-          position: "relative",
-          zIndex: 1,
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          className="gate-language-wrap"
-          style={{
-            position: "sticky",
-            top: 0,
-            left: 0,
-            right: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-            paddingTop: "max(16px, env(safe-area-inset-top, 0))",
-            paddingBottom: 12,
-            flexShrink: 0,
-          }}
-        >
-          <LanguageSelect />
-          <DiscordLink />
-          <RedditLink />
-        </div>
-        <HomeGate
-          mlosCount={mlosCount}
-          creatorsCount={creatorsCount}
-          serversCount={serversCount}
-          mloImages={mloImages}
-          serverImages={serverImages}
-        />
-      </div>
-    </main>
-  );
-}
-
 export default function Home() {
   return (
     <Suspense
@@ -1019,11 +1436,11 @@ export default function Home() {
             background: "#0f1115",
           }}
         >
-          <p>Loading…</p>
+          <p>LoadingΓÇª</p>
         </main>
       }
     >
-      <GatePage />
+      <HomeContent />
     </Suspense>
   );
 }

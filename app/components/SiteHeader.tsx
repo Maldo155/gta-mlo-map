@@ -3,9 +3,12 @@
 import { siteConfig } from "@/app/lib/siteConfig";
 import AuthLink from "./AuthLink";
 import DiscordLink from "./DiscordLink";
+import RedditLink from "./RedditLink";
 import LanguageSelect from "./LanguageSelect";
 import ClassicNav from "./ClassicNav";
 import MegaNav from "./MegaNav";
+import ExpandableTopNav from "./ExpandableTopNav";
+import ActionWheelNav from "./ActionWheelNav";
 import { useLanguage } from "./LanguageProvider";
 
 type SiteHeaderProps = {
@@ -53,6 +56,7 @@ export default function SiteHeader({
           <LanguageSelect />
           <AuthLink />
           <DiscordLink />
+          <RedditLink />
           {showContact && (
             <button
               type="button"
@@ -66,7 +70,15 @@ export default function SiteHeader({
           )}
         </div>
       </div>
-      {siteConfig.useMegaNav ? <MegaNav /> : <ClassicNav />}
+      {siteConfig.navStyle === "actionWheel" ? (
+        <ActionWheelNav />
+      ) : siteConfig.navStyle === "expandable" ? (
+        <ExpandableTopNav />
+      ) : siteConfig.navStyle === "mega" ? (
+        <MegaNav />
+      ) : (
+        <ClassicNav />
+      )}
     </header>
   );
 }

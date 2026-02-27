@@ -66,6 +66,8 @@ export default function ServerGalleryConveyor({ images, serverName }: Props) {
                   flexShrink: 0,
                   width: 240,
                   height: 180,
+                  minWidth: 44,
+                  minHeight: 44,
                   padding: 0,
                   border: "1px solid #1f2937",
                   borderRadius: 8,

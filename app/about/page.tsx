@@ -7,7 +7,7 @@ export default function AboutPage() {
   const { t } = useLanguage();
   return (
     <main
-      className="home-root"
+      className="home-root about-page"
       style={{
         minHeight: "100vh",
         color: "white",
@@ -65,25 +65,36 @@ export default function AboutPage() {
               borderRadius: 12,
               border: "1px solid rgba(36, 48, 70, 0.6)",
               padding: "28px 32px",
+              borderLeft: "4px solid rgba(168, 85, 247, 0.6)",
             }}
           >
             <p style={{ marginBottom: 20 }}>
-              A lot of us have been there: hunting for that one perfect MLO for
-              your org, your business, or your house. You search and search—
-              <em>I wonder if there is even an MLO in this location?</em>—and too
-              often you end up picking whatever&apos;s easiest to find or
-              whatever looks cheapest. But is it really the best fit?
+              &ldquo;A lot of us have been there: you need a specific MLO for your org,
+              your business, or your house. You search everywhere—<em>is there
+              even something at this location?</em>—and usually end up grabbing
+              whatever&apos;s easiest to find or whatever looks cheapest. But is
+              it actually the right fit?
             </p>
             <p style={{ marginBottom: 20 }}>
-              That&apos;s why <span className="hero-brand">MLOMesh</span> exists. We wanted a single place where MLO
-              creators can put their work in front of the right people—and where
-              players and city owners can browse, filter, and compare MLOs
-              without the usual guesswork.
+              That&apos;s why <span className="hero-brand">MLOMesh</span> exists. I wanted one place where creators could
+              actually put their work in front of the right people, and where
+              players and city owners could browse and compare MLOs without
+              guessing or digging through a dozen Discords and marketplaces.
+            </p>
+            <p style={{ marginBottom: 20 }}>
+              So we built a map you can click around to see what MLOs exist where,
+              plus a cities directory so you can browse FiveM servers, see who&apos;s
+              featuring what, and find the right interiors for your city. Creator
+              filtering, coordinates, and spotlight for builders who deserve more
+              visibility.
             </p>
             <p style={{ marginBottom: 0 }}>
-              Whether you&apos;re a creator sharing your maps or someone looking
-              for the right one, <span className="hero-brand">MLOMesh</span> is built to make discovery simpler and
-              choices clearer.
+              Whether you&apos;re a creator putting your maps out there or someone
+              hunting for the right interior, <span className="hero-brand">MLOMesh</span> is here to make that
+              discovery a bit simpler.&rdquo;
+            </p>
+            <p style={{ marginTop: 28, marginBottom: 0, fontSize: 22, opacity: 0.95 }}>
+              — Maldo
             </p>
           </div>
         </section>

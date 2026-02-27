@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useLanguage } from "./LanguageProvider";
 
 const CHAT_STORAGE_KEY = "mlomesh_chat_thread";
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 5000;
 
 type Message = {
   id: string;

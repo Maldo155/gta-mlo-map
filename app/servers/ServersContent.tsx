@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
-import AuthLink from "../components/AuthLink";
-import DiscordLink from "../components/DiscordLink";
-import LanguageSelect from "../components/LanguageSelect";
+import SiteHeader from "../components/SiteHeader";
 import ServerBadges from "../components/ServerBadges";
 import ServerModal from "../components/ServerModal";
 import ClaimModal from "../components/ClaimModal";
@@ -77,7 +75,7 @@ export default function ServersContent() {
   const [likedServerIds, setLikedServerIds] = useState<Set<string>>(new Set());
   const [selectedServer, setSelectedServer] = useState<Server | null>(null);
   const [claimServer, setClaimServer] = useState<Server | null>(null);
-  const [serversBanner, setServersBanner] = useState<{
+  const [banner, setBanner] = useState<{
     title: string | null;
     subtitle: string | null;
     enabled?: boolean;
@@ -93,6 +91,35 @@ export default function ServersContent() {
     animation?: string | null;
   } | null>(null);
   const closeModal = useCallback(() => setSelectedServer(null), []);
+
+  function fetchBanner() {
+    fetch("/api/site-banner-cities", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) =>
+        setBanner({
+          title: d.title ?? null,
+          subtitle: d.subtitle ?? null,
+          enabled: d.enabled === true,
+          font_family: d.font_family ?? null,
+          title_font_size: d.title_font_size ?? null,
+          subtitle_font_size: d.subtitle_font_size ?? null,
+          title_font_weight: d.title_font_weight ?? null,
+          letter_spacing: d.letter_spacing ?? null,
+          subtitle_color: d.subtitle_color ?? null,
+          title_font_color: d.title_font_color ?? null,
+          background_color: d.background_color ?? null,
+          border_color: d.border_color ?? null,
+          animation: d.animation ?? null,
+        })
+      )
+      .catch(() => setBanner(null));
+  }
+
+  useEffect(() => {
+    fetchBanner();
+    const interval = setInterval(fetchBanner, 15_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const refreshServers = useCallback(() => {
     fetch("/api/servers", { cache: "no-store" })
@@ -114,34 +141,6 @@ export default function ServersContent() {
       .then((r) => r.json())
       .then((d) => setServers(d.servers || []))
       .catch(() => setServers([]));
-  }, []);
-
-  function fetchServersBanner() {
-    fetch("/api/site-banner-servers", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) =>
-        setServersBanner({
-          title: d.title ?? null,
-          subtitle: d.subtitle ?? null,
-          enabled: d.enabled === true,
-          font_family: d.font_family ?? null,
-          title_font_size: d.title_font_size ?? null,
-          subtitle_font_size: d.subtitle_font_size ?? null,
-          title_font_weight: d.title_font_weight ?? null,
-          letter_spacing: d.letter_spacing ?? null,
-          subtitle_color: d.subtitle_color ?? null,
-          title_font_color: d.title_font_color ?? null,
-          background_color: d.background_color ?? null,
-          border_color: d.border_color ?? null,
-          animation: d.animation ?? null,
-        })
-      )
-      .catch(() => setServersBanner(null));
-  }
-  useEffect(() => {
-    fetchServersBanner();
-    const interval = setInterval(fetchServersBanner, 15_000);
-    return () => clearInterval(interval);
   }, []);
 
   const claimId = searchParams.get("claim");
@@ -268,6 +267,12 @@ export default function ServersContent() {
     [filtered]
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined" || window.location.hash !== "#unclaimed-servers") return;
+    const el = document.getElementById("unclaimed-servers");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [unclaimedServers.length]);
+
   const clearFilters = () => {
     setFilterRegion("");
     setFilterEconomy("");
@@ -358,7 +363,7 @@ export default function ServersContent() {
         />
       )}
     <main
-      className="home-root"
+      className="home-root servers-page"
       style={{
         minHeight: "100vh",
         color: "white",
@@ -372,7 +377,7 @@ export default function ServersContent() {
           position: "fixed",
           inset: 0,
           background:
-            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
+            'linear-gradient(180deg, rgba(10, 13, 20, 0.7) 0%, rgba(10, 13, 20, 0.78) 50%, rgba(8, 10, 15, 0.92) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
           zIndex: 0,
           pointerEvents: "none",
         }}
@@ -385,118 +390,78 @@ export default function ServersContent() {
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "12px 16px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            color: "white",
-          }}
-        >
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-            </div>
-          </div>
-          <nav className="header-nav">
-            <a href="/" className="header-link">
-              {t("nav.home")}
-            </a>
-            <a href="/map" className="header-link">
-              {t("nav.map")}
-            </a>
-            <a href="/about" className="header-link">
-              {t("nav.about")}
-            </a>
-            <a href="/creators" className="header-link header-link-creators">
-              {t("nav.creators")}
-            </a>
-            <a href="/servers" className="header-link header-link-servers">
-              {t("nav.servers")}
-            </a>
-            <a href="/submit" className="header-link">
-              {t("nav.submit")}
-            </a>
-          </nav>
-        </header>
+        <SiteHeader />
 
         <div
           className="servers-page-content"
           style={{
-            maxWidth: 1100,
+            maxWidth: 1280,
             margin: "0 auto",
             padding: "24px 16px 64px",
           }}
         >
-          {serversBanner?.enabled === true && (serversBanner?.title || serversBanner?.subtitle) && (
-            <>
-              <style>{`
-                @keyframes serversBannerFlash {
-                  0% { box-shadow: 0 0 0 rgba(59,130,246,0.0); border-color: #3b82f6; }
-                  50% { box-shadow: 0 0 24px rgba(59,130,246,0.4); border-color: #2563eb; }
-                  100% { box-shadow: 0 0 0 rgba(59,130,246,0.0); border-color: #3b82f6; }
-                }
-                @keyframes serversBannerPulse {
-                  0%, 100% { opacity: 1; transform: scale(1); }
-                  50% { opacity: 0.92; transform: scale(1.01); }
-                }
-                @keyframes serversBannerFade {
-                  0%, 100% { opacity: 1; }
-                  50% { opacity: 0.7; }
-                }
-              `}</style>
-              <div
-                className="servers-status-banner"
-                style={{
-                  borderRadius: 12,
-                  border: `2px solid ${serversBanner?.border_color || "#3b82f6"}`,
-                  background: serversBanner?.background_color || "linear-gradient(135deg, rgba(59,130,246,0.25), rgba(34,197,94,0.15))",
-                  padding: "20px 24px",
-                  marginBottom: 24,
-                  boxShadow: "0 12px 24px rgba(0,0,0,0.3)",
-                  textAlign: "center",
-                  animation: serversBanner?.animation === "none"
-                    ? undefined
-                    : serversBanner?.animation === "pulse"
-                      ? "serversBannerPulse 2s ease-in-out infinite"
-                      : serversBanner?.animation === "fade"
-                        ? "serversBannerFade 2s ease-in-out infinite"
-                        : "serversBannerFlash 1.6s ease-in-out infinite",
-                  fontFamily: serversBanner?.font_family ? `"${serversBanner.font_family}", sans-serif` : undefined,
-                }}
-              >
-                {serversBanner?.title && (
-                  <div
-                    style={{
-                      fontSize: serversBanner?.title_font_size ?? 28,
-                      fontWeight: serversBanner?.title_font_weight ?? 800,
-                      letterSpacing: serversBanner?.letter_spacing ?? "0.5px",
-                      color: serversBanner?.title_font_color || undefined,
-                    }}
-                  >
-                    {serversBanner.title}
-                  </div>
-                )}
-                {serversBanner?.subtitle && (
-                  <div
-                    style={{
-                      marginTop: serversBanner?.title ? 10 : 0,
-                      fontSize: serversBanner?.subtitle_font_size ?? 16,
-                      color: serversBanner?.subtitle_color || "#94a3b8",
-                    }}
-                  >
-                    {serversBanner.subtitle}
-                  </div>
-                )}
-              </div>
-            </>
+          <style>{`
+            @keyframes statusFlash {
+              0% { box-shadow: 0 0 0 rgba(251,191,36,0.0); border-color: #fbbf24; }
+              50% { box-shadow: 0 0 24px rgba(251,191,36,0.5); border-color: #f59e0b; }
+              100% { box-shadow: 0 0 0 rgba(251,191,36,0.0); border-color: #fbbf24; }
+            }
+            @keyframes statusPulse {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50% { opacity: 0.92; transform: scale(1.01); }
+            }
+            @keyframes statusFade {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.7; }
+            }
+          `}</style>
+          {banner?.enabled === true && (banner?.title || banner?.subtitle) && (
+            <div
+              className="home-status-banner"
+              style={{
+                borderRadius: 18,
+                border: `2px solid ${banner?.border_color || "#ff9f5c"}`,
+                background:
+                  banner?.background_color ||
+                  "linear-gradient(135deg, rgba(255,159,92,0.2), rgba(255,111,0,0.15))",
+                padding: "36px 44px",
+                boxShadow: "0 18px 32px rgba(0,0,0,0.35)",
+                textAlign: "center",
+                marginBottom: 24,
+                animation: banner?.animation === "none"
+                  ? undefined
+                  : banner?.animation === "pulse"
+                    ? "statusPulse 2s ease-in-out infinite"
+                    : banner?.animation === "fade"
+                      ? "statusFade 2s ease-in-out infinite"
+                      : "statusFlash 1.6s ease-in-out infinite",
+                fontFamily: banner?.font_family ? `"${banner.font_family}", sans-serif` : undefined,
+              }}
+            >
+              {banner?.title && (
+                <div
+                  style={{
+                    fontSize: banner?.title_font_size ?? 36,
+                    fontWeight: banner?.title_font_weight ?? 900,
+                    letterSpacing: banner?.letter_spacing ?? "0.8px",
+                    color: banner?.title_font_color || undefined,
+                  }}
+                >
+                  {banner.title}
+                </div>
+              )}
+              {banner?.subtitle && (
+                <div
+                  style={{
+                    marginTop: banner?.title ? 12 : 0,
+                    fontSize: banner?.subtitle_font_size ?? 22,
+                    color: banner?.subtitle_color || "#fde68a",
+                  }}
+                >
+                  {banner.subtitle}
+                </div>
+              )}
+            </div>
           )}
           <h1 className="servers-page-title" style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>
             {t("servers.title")}

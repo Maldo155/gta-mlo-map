@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import AuthLink from "@/app/components/AuthLink";
-import DiscordLink from "@/app/components/DiscordLink";
-import LanguageSelect from "@/app/components/LanguageSelect";
+import SiteHeader from "@/app/components/SiteHeader";
 import MloBackButton from "@/app/components/MloBackButton";
 import MloViewTracker from "@/app/components/MloViewTracker";
 import { fetchMloById, fetchAllMlos } from "@/app/lib/fetchMlos";
@@ -144,44 +142,7 @@ export default async function MloPage({
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "16px 24px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-            </div>
-          </div>
-          <nav className="header-nav">
-            <a href="/" className="header-link">
-              Home
-            </a>
-            <a href="/map" className="header-link">
-              Map
-            </a>
-            <a href="/about" className="header-link">
-              About
-            </a>
-            <a href="/creators" className="header-link header-link-creators">
-              MLO Creators
-            </a>
-            <a href="/submit" className="header-link">
-              Submit
-            </a>
-          </nav>
-        </header>
+        <SiteHeader />
 
         <section
           className="mlo-detail-section"

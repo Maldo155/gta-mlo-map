@@ -7,9 +7,7 @@ import PublicFilterSidebar from "../components/PublicFilterSidebar";
 import Sidebar from "../components/Sidebar";
 import MapWelcomePopup from "../components/MapWelcomePopup";
  import { CategoryKey } from "../lib/categories";
-import AuthLink from "../components/AuthLink";
-import DiscordLink from "../components/DiscordLink";
-import LanguageSelect from "../components/LanguageSelect";
+import SiteHeader from "../components/SiteHeader";
 import { useLanguage } from "../components/LanguageProvider";
  
  const Map = dynamic(() => import("../components/Map"), { ssr: false });
@@ -259,62 +257,13 @@ function MapPageContent() {
         style={{
           position: "fixed",
           inset: 0,
-          background:
-            'linear-gradient(180deg, rgba(10, 13, 20, 0.38) 0%, rgba(10, 13, 20, 0.52) 50%, rgba(8, 10, 15, 0.7) 100%), #1a1f26 url("/api/home-bg") no-repeat center top / cover',
+          background: "#0f1115",
           zIndex: 0,
           pointerEvents: "none",
         }}
       />
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-      <div className="header-logo-float">
-        <img src="/mlomesh-logo.png" alt="MLOMesh logo" className="header-logo" />
-      </div>
-      <header
-        className="site-header"
-        style={{
-          padding: "6px 12px",
-          backgroundColor: "#10162b",
-          backgroundImage: 'url("/header-bg.png")',
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          backgroundRepeat: "no-repeat",
-          color: "white",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <div className="header-top">
-          <div className="header-brand">
-            <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1 }}>
-              MLOMESH
-            </div>
-          </div>
-          <div className="header-actions">
-            <LanguageSelect />
-            <AuthLink />
-            <DiscordLink />
-          </div>
-        </div>
-        <nav className="header-nav">
-          <a href="/" className="header-link">
-            {t("nav.home")}
-          </a>
-          <a href="/map" className="header-link">
-            {t("nav.map")}
-          </a>
-          <a href="/about" className="header-link">
-            {t("nav.about")}
-          </a>
-          <a href="/creators" className="header-link header-link-creators">
-            {t("nav.creators")}
-          </a>
-          <a href="/servers" className="header-link header-link-servers">
-            {t("nav.servers")}
-          </a>
-          <a href="/submit" className="header-link">
-            {t("nav.submit")}
-          </a>
-        </nav>
-      </header>
+      <SiteHeader variant="map" />
        <div
          className="map-content-area"
          style={{

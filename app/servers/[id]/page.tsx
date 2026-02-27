@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-import AuthLink from "@/app/components/AuthLink";
-import DiscordLink from "@/app/components/DiscordLink";
-import LanguageSelect from "@/app/components/LanguageSelect";
+import SiteHeader from "@/app/components/SiteHeader";
 import { fetchServerById } from "@/app/lib/fetchServers";
 import { fetchCreatorsList } from "@/app/lib/fetchCreatorsList";
 import {
@@ -164,47 +162,7 @@ export default async function ServerPage({
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "12px 16px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            color: "white",
-          }}
-        >
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-            </div>
-          </div>
-          <nav className="header-nav">
-            <a href="/" className="header-link">
-              Home
-            </a>
-            <a href="/map" className="header-link">
-              Map
-            </a>
-            <a href="/about" className="header-link">
-              About
-            </a>
-            <a href="/creators" className="header-link header-link-creators">
-              MLO Creators
-            </a>
-            <a href="/servers" className="header-link header-link-servers">
-              FiveM Servers
-            </a>
-            <a href="/submit" className="header-link">
-              Submit
-            </a>
-          </nav>
-        </header>
+        <SiteHeader />
 
         <div
           style={{

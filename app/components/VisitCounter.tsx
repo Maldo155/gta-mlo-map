@@ -30,7 +30,7 @@ export default function VisitCounter() {
       .catch(() => {});
   }, []);
 
-  if (pathname === "/map" || count == null) return null;
+  if (pathname === "/map" || pathname === "/" || count == null) return null;
 
   return (
     <div

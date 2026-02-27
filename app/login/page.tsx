@@ -4,9 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
-import AuthLink from "../components/AuthLink";
-import DiscordLink from "../components/DiscordLink";
-import LanguageSelect from "../components/LanguageSelect";
+import SiteHeader from "../components/SiteHeader";
 import { useLanguage } from "../components/LanguageProvider";
 
 function LoginContent() {
@@ -46,6 +44,19 @@ function LoginContent() {
     const next = nextPath.startsWith("/") ? nextPath : "/servers/submit";
     window.location.href = `/auth/start?next=${encodeURIComponent(next)}`;
   }, [autoRetry, errorFromCallback, nextPath]);
+
+  // When "already used/expired": clear stale session so the next sign-in is fresh. No auto-redirect;
+  // user clicks "Sign in with Discord" to retry with clean state.
+  useEffect(() => {
+    if (typeof window === "undefined" || !errorFromCallback) return;
+    const isAlreadyUsed =
+      errorFromCallback.toLowerCase().includes("unable to exchange") ||
+      errorFromCallback.toLowerCase().includes("already used") ||
+      errorFromCallback.toLowerCase().includes("expired");
+    if (!isAlreadyUsed) return;
+    // Clear any partial session so retry starts clean
+    getSupabaseBrowser().auth.signOut({ scope: "local" }).catch(() => {});
+  }, [errorFromCallback]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !errorFromCallback) {
@@ -138,47 +149,7 @@ function LoginContent() {
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "12px 16px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            color: "white",
-          }}
-        >
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-            </div>
-          </div>
-          <nav className="header-nav">
-            <a href="/" className="header-link">
-              Home
-            </a>
-            <a href="/map" className="header-link">
-              Map
-            </a>
-            <a href="/about" className="header-link">
-              About
-            </a>
-            <a href="/creators" className="header-link header-link-creators">
-              MLO Creators
-            </a>
-            <a href="/servers" className="header-link header-link-servers">
-              {t("nav.servers")}
-            </a>
-            <a href="/submit" className="header-link">
-              Submit
-            </a>
-          </nav>
-        </header>
+        <SiteHeader />
 
         <section
           className="login-page-section"
@@ -204,6 +175,33 @@ function LoginContent() {
                 maxWidth: 420,
               }}
             >
+              {/* Redirected from localhost to production - need to add localhost to Supabase */}
+              {errorFromCallback.toLowerCase().includes("pkce") &&
+               debugOrigin?.startsWith("https://") &&
+               typeof window !== "undefined" &&
+               (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") === false && (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: 14,
+                    background: "rgba(251, 191, 36, 0.2)",
+                    borderRadius: 8,
+                    border: "1px solid rgba(251, 191, 36, 0.5)",
+                    fontSize: 13,
+                    textAlign: "left",
+                  }}
+                >
+                  <strong>Redirected to wrong site?</strong> If you started sign-in on localhost, Discord sent you here because localhost isn&apos;t in Supabase&apos;s allow list. Add these to{" "}
+                  <strong>Supabase Dashboard → Authentication → URL Configuration → Redirect URLs</strong>:
+                  <ul style={{ margin: "8px 0 0 16px", paddingLeft: 0 }}>
+                    <li><code style={{ background: "#1f2937", padding: "2px 6px", borderRadius: 4 }}>http://localhost:3000/auth/callback</code></li>
+                    <li><code style={{ background: "#1f2937", padding: "2px 6px", borderRadius: 4 }}>http://localhost:3000/auth/callback/client</code></li>
+                    <li><code style={{ background: "#1f2937", padding: "2px 6px", borderRadius: 4 }}>http://127.0.0.1:3000/auth/callback</code></li>
+                    <li><code style={{ background: "#1f2937", padding: "2px 6px", borderRadius: 4 }}>http://127.0.0.1:3000/auth/callback/client</code></li>
+                  </ul>
+                  <p style={{ margin: "10px 0 0", fontSize: 12, opacity: 0.9 }}>Then try again from <code>http://localhost:3000</code> or <code>http://127.0.0.1:3000</code>.</p>
+                </div>
+              )}
               <p style={{ margin: 0, marginBottom: 12 }}>
                 {errorFromCallback.toLowerCase().includes("unable to exchange") ||
                 errorFromCallback.toLowerCase().includes("external code")
@@ -256,6 +254,7 @@ function LoginContent() {
                     {debugWhere === "browser" && debugCookies === "absent" && "→ Browser had no cookies. Verifier was never stored before redirect to Discord."}
                     {debugWhere === "browser" && debugCookies === "present" && debugSbCookies === "no" && "→ Browser had cookies but no Supabase. Wrong origin when OAuth was initiated."}
                     {debugWhere === "browser" && debugCookies === "present" && debugSbCookies === "yes" && "→ Browser had Supabase cookies but exchange failed. Possible: code expired or already used."}
+                    {(errorFromCallback?.toLowerCase().includes("unable to exchange") || errorFromCallback?.toLowerCase().includes("already used")) && "→ Tip: Finish each sign-in before starting another. Don't open multiple sign-in tabs."}
                   </p>
                 </div>
               )}

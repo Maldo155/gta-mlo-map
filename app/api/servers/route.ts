@@ -44,7 +44,7 @@ export async function GET() {
   })) as Server[];
 
   const res = NextResponse.json({ servers });
-  res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
   return res;
 }
 

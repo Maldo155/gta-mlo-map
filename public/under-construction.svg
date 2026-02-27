@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+  <defs>
+    <pattern id="stripes" patternUnits="userSpaceOnUse" width="24" height="24" patternTransform="rotate(-35)">
+      <rect width="24" height="24" fill="#FCD34D"/>
+      <rect x="0" y="0" width="10" height="24" fill="#1e293b"/>
+    </pattern>
+  </defs>
+  <!-- Full background - diagonal caution tape stripes -->
+  <rect width="400" height="200" fill="url(#stripes)"/>
+  <!-- Centered text - bold, no overlap issues -->
+  <text x="200" y="108" text-anchor="middle" fill="#1e293b" font-size="32" font-weight="900" font-family="Arial,sans-serif">COMING SOON</text>
+</svg>

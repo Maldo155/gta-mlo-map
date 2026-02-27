@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import AuthLink from "../components/AuthLink";
-import DiscordLink from "../components/DiscordLink";
-import LanguageSelect from "../components/LanguageSelect";
+import SiteHeader from "../components/SiteHeader";
 import { useLanguage } from "../components/LanguageProvider";
 import { useVisitedMloIds } from "@/app/hooks/useVisitedMloIds";
 import ViewDetailsLink from "../components/ViewDetailsLink";
@@ -155,7 +153,7 @@ export default function CreatorsContent() {
 
   return (
     <main
-      className="home-root"
+      className="home-root creators-page"
       style={{
         minHeight: "100vh",
         color: "white",
@@ -182,48 +180,7 @@ export default function CreatorsContent() {
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "12px 16px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            color: "white",
-          }}
-        >
-        <div className="header-top">
-          <div className="header-brand" />
-          <div className="header-actions">
-            <LanguageSelect />
-            <AuthLink />
-            <DiscordLink />
-            
-          </div>
-        </div>
-        <nav className="header-nav">
-          <a href="/" className="header-link">
-            {t("nav.home")}
-          </a>
-          <a href="/map" className="header-link">
-            {t("nav.map")}
-          </a>
-          <a href="/about" className="header-link">
-            {t("nav.about")}
-          </a>
-          <a href="/creators" className="header-link header-link-creators">
-            {t("nav.creators")}
-          </a>
-          <a href="/servers" className="header-link header-link-servers">
-            {t("nav.servers")}
-          </a>
-          <a href="/submit" className="header-link">
-            {t("nav.submit")}
-          </a>
-        </nav>
-        </header>
+        <SiteHeader />
         <div className="creators-page-content" style={{ maxWidth: 1000, margin: "0 auto", padding: 24 }}>
         <h1>{t("creators.title")}</h1>
         <p style={{ opacity: 0.7, marginBottom: 16 }}>

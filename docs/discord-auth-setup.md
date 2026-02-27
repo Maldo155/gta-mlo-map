@@ -25,10 +25,9 @@ To require Discord login before adding a FiveM server, complete these steps.
 
 1. **Authentication** → **URL Configuration** → **Redirect URLs**
 2. Add **every** URL where users can sign in (must match exactly, including port):
-   - Production: `https://mlomesh.vercel.app/auth/callback/client`
-   - (Also add `https://mlomesh.vercel.app/auth/callback` if you use the server callback)
-   - Custom domain: `https://www.mlomesh.com.isla.pr/auth/callback` (if used)
-   - Local dev: `http://127.0.0.1:3000/auth/callback/client` — use 127.0.0.1 only. **Remove** `http://localhost:3000/auth/callback` if present; Supabase may redirect to localhost instead of 127.0.0.1, and cookies won’t transfer (different origin).
+   - Production (Vercel): `https://mlomesh.vercel.app/auth/callback` and `https://mlomesh.vercel.app/auth/callback/client`
+   - **Custom domain** (required if users sign in from it): `https://www.mlomesh.com.isla.pr/**` (or `https://www.mlomesh.com.isla.pr/auth/callback` and `https://www.mlomesh.com.isla.pr/auth/callback/client` if wildcards not allowed)
+   - Local dev: `http://localhost:3000/**` and `http://127.0.0.1:3000/**`. Without these, sign-in from localhost will redirect to production and fail with a PKCE error.
 3. **Site URL** must match where users actually sign in. If you use `https://mlomesh.vercel.app`, set Site URL to that—not a different domain. A mismatch can cause Supabase to redirect incorrectly and drop the auth code.
 4. Save changes
 
@@ -65,16 +64,32 @@ Or run the file: `supabase/servers-add-user-id.sql`
 3. **Code already used**  
    Each auth code is single-use. If you retry, start a new sign-in from the login page.
 
-### Redirected to wrong site (e.g. live site when on localhost)
+### Redirected to wrong site (e.g. custom domain → vercel.app, or localhost → production)
 
-Supabase redirects to the Site URL when your `redirectTo` is not in the allow list.
+Supabase redirects to the Site URL when your `redirectTo` is **not in the Redirect URLs allow list**. If you sign in from `www.mlomesh.com.isla.pr` and land on `mlomesh.vercel.app/login` with "Unable to exchange external code" or "link already used or expired", the custom domain is not in the list.
 
-1. Add to Supabase Redirect URLs (use wildcards to match any port):
-   - `http://localhost:3000/**`, `http://127.0.0.1:3000/**`
-   - `http://localhost:3001/**`, `http://127.0.0.1:3001/**`
-   - Or exact paths like `http://localhost:3000/auth/callback` for each port
-2. The app uses the Host header in dev, so auth works on any port without extra config.
-3. **Optional fallback:** If redirect-to-production persists, add `NEXT_PUBLIC_APP_URL=http://localhost:XXXX` (your port) to `.env.local` and restart.
+**Fix for custom domain:**
+1. Go to **Supabase Dashboard → Authentication → URL Configuration → Redirect URLs**
+2. Add `https://www.mlomesh.com.isla.pr/**` (or exact: `https://www.mlomesh.com.isla.pr/auth/callback` and `https://www.mlomesh.com.isla.pr/auth/callback/client`)
+3. Save. Then sign in again from the custom domain (use a **fresh** sign-in—the old code is already consumed).
+
+### Callback on correct domain but "Unable to exchange" / "already used or expired"
+
+If the callback origin is correct (e.g. `www.mlomesh.com.isla.pr`) but you still get this error:
+
+1. **Use a completely fresh flow** – OAuth codes are single-use and expire quickly. Close all tabs, open an incognito/private window, go to your site, and start sign-in from the page (e.g. `/cities` → Add city → Sign in). Do not retry from the error page.
+2. **Use exact Redirect URLs** – If wildcards fail, add:
+   - `https://www.mlomesh.com.isla.pr/auth/callback`
+   - `https://www.mlomesh.com.isla.pr/auth/callback/client`
+3. **Set Site URL** – In Supabase **URL Configuration**, set **Site URL** to your primary domain (e.g. `https://www.mlomesh.com.isla.pr` if that’s what users use). A mismatch can cause Supabase to redirect or validate incorrectly.
+
+**Fix for localhost:**
+
+1. Go to **Supabase Dashboard → Authentication → URL Configuration → Redirect URLs**
+2. Add these URLs for local dev (adjust port if needed):
+   - `http://localhost:3000/**`
+   - `http://127.0.0.1:3000/**`
+3. Save. Wildcards match all paths and query params, so auth will redirect back to localhost once these are allowed.
 
 ### Discord "Sign in" button disappears
 

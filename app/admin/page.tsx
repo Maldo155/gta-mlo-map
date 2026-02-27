@@ -12,10 +12,8 @@ import { CATEGORIES, type CategoryKey } from "../lib/categories";
 import { BANNER_FONTS } from "../lib/bannerFonts";
 import Sidebar from "../components/Sidebar";
 import AdminLogin from "../components/AdminLogin";
-import AuthLink from "../components/AuthLink";
-import DiscordLink from "../components/DiscordLink";
+import SiteHeader from "../components/SiteHeader";
 import AdminCreatorTilesGrid from "../components/AdminCreatorTilesGrid";
-import LanguageSelect from "../components/LanguageSelect";
 import { useLanguage } from "../components/LanguageProvider";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 
@@ -992,21 +990,36 @@ export default function AdminPage() {
   const [bannerBorderColor, setBannerBorderColor] = useState("");
   const [bannerAnimation, setBannerAnimation] = useState("");
   const [bannerSaving, setBannerSaving] = useState(false);
-  const [showServersBanner, setShowServersBanner] = useState(false);
-  const [serversBannerEnabled, setServersBannerEnabled] = useState(true);
-  const [serversBannerTitle, setServersBannerTitle] = useState("");
-  const [serversBannerSubtitle, setServersBannerSubtitle] = useState("");
-  const [serversBannerFontFamily, setServersBannerFontFamily] = useState("");
-  const [serversBannerTitleFontSize, setServersBannerTitleFontSize] = useState("");
-  const [serversBannerSubtitleFontSize, setServersBannerSubtitleFontSize] = useState("");
-  const [serversBannerTitleFontWeight, setServersBannerTitleFontWeight] = useState("");
-  const [serversBannerLetterSpacing, setServersBannerLetterSpacing] = useState("");
-  const [serversBannerSubtitleColor, setServersBannerSubtitleColor] = useState("");
-  const [serversBannerTitleFontColor, setServersBannerTitleFontColor] = useState("");
-  const [serversBannerBackgroundColor, setServersBannerBackgroundColor] = useState("");
-  const [serversBannerBorderColor, setServersBannerBorderColor] = useState("");
-  const [serversBannerAnimation, setServersBannerAnimation] = useState("");
-  const [serversBannerSaving, setServersBannerSaving] = useState(false);
+  const [showCitiesBanner, setShowCitiesBanner] = useState(false);
+  const [citiesBannerEnabled, setCitiesBannerEnabled] = useState(false);
+  const [citiesBannerTitle, setCitiesBannerTitle] = useState("");
+  const [citiesBannerSubtitle, setCitiesBannerSubtitle] = useState("");
+  const [citiesBannerFontFamily, setCitiesBannerFontFamily] = useState("");
+  const [citiesBannerTitleFontSize, setCitiesBannerTitleFontSize] = useState("");
+  const [citiesBannerSubtitleFontSize, setCitiesBannerSubtitleFontSize] = useState("");
+  const [citiesBannerTitleFontWeight, setCitiesBannerTitleFontWeight] = useState("");
+  const [citiesBannerLetterSpacing, setCitiesBannerLetterSpacing] = useState("");
+  const [citiesBannerSubtitleColor, setCitiesBannerSubtitleColor] = useState("");
+  const [citiesBannerTitleFontColor, setCitiesBannerTitleFontColor] = useState("");
+  const [citiesBannerBackgroundColor, setCitiesBannerBackgroundColor] = useState("");
+  const [citiesBannerBorderColor, setCitiesBannerBorderColor] = useState("");
+  const [citiesBannerAnimation, setCitiesBannerAnimation] = useState("");
+  const [citiesBannerSaving, setCitiesBannerSaving] = useState(false);
+  const [showGateBanner, setShowGateBanner] = useState(false);
+  const [gateBannerEnabled, setGateBannerEnabled] = useState(false);
+  const [gateBannerTitle, setGateBannerTitle] = useState("");
+  const [gateBannerSubtitle, setGateBannerSubtitle] = useState("");
+  const [gateBannerFontFamily, setGateBannerFontFamily] = useState("");
+  const [gateBannerTitleFontSize, setGateBannerTitleFontSize] = useState("");
+  const [gateBannerSubtitleFontSize, setGateBannerSubtitleFontSize] = useState("");
+  const [gateBannerTitleFontWeight, setGateBannerTitleFontWeight] = useState("");
+  const [gateBannerLetterSpacing, setGateBannerLetterSpacing] = useState("");
+  const [gateBannerSubtitleColor, setGateBannerSubtitleColor] = useState("");
+  const [gateBannerTitleFontColor, setGateBannerTitleFontColor] = useState("");
+  const [gateBannerBackgroundColor, setGateBannerBackgroundColor] = useState("");
+  const [gateBannerBorderColor, setGateBannerBorderColor] = useState("");
+  const [gateBannerAnimation, setGateBannerAnimation] = useState("");
+  const [gateBannerSaving, setGateBannerSaving] = useState(false);
   const [editMloSearch, setEditMloSearch] = useState("");
   const [editMloSelectedIds, setEditMloSelectedIds] = useState<Set<string>>(new Set());
   const [editingMloId, setEditingMloId] = useState<string | null>(null);
@@ -1022,7 +1035,7 @@ export default function AdminPage() {
   const [editMloSaving, setEditMloSaving] = useState(false);
   const [showCreatorSpotlight, setShowCreatorSpotlight] = useState(false);
   const [showAdminPanels, setShowAdminPanels] = useState(false);
-  const [activePanel, setActivePanel] = useState<"all" | "addMlos" | "statusBanner" | "serversBanner" | "liveChats" | "editMlos" | "creatorTiles" | "creatorSpotlight" | "review" | "servers" | null>(null);
+  const [activePanel, setActivePanel] = useState<"all" | "addMlos" | "statusBanner" | "citiesBanner" | "gateBanner" | "liveChats" | "editMlos" | "creatorTiles" | "creatorSpotlight" | "review" | "servers" | null>(null);
   const [spotlightLogoSize, setSpotlightLogoSize] = useState<Record<string, number>>({});
   const [spotlightSaving, setSpotlightSaving] = useState<string | null>(null);
   const [spotlightUploading, setSpotlightUploading] = useState<string | null>(null);
@@ -1194,22 +1207,39 @@ export default function AdminPage() {
     setBannerAnimation(json.animation ?? "");
   }
 
-  async function loadServersBanner() {
-    const res = await fetch("/api/site-banner-servers", { cache: "no-store" });
+  async function loadCitiesBanner() {
+    const res = await fetch("/api/site-banner-cities", { cache: "no-store" });
     const json = await res.json();
-    setServersBannerEnabled(json.enabled !== false);
-    setServersBannerTitle(json.title ?? "");
-    setServersBannerSubtitle(json.subtitle ?? "");
-    setServersBannerFontFamily(json.font_family ?? "");
-    setServersBannerTitleFontSize(json.title_font_size != null ? String(json.title_font_size) : "");
-    setServersBannerSubtitleFontSize(json.subtitle_font_size != null ? String(json.subtitle_font_size) : "");
-    setServersBannerTitleFontWeight(json.title_font_weight ?? "");
-    setServersBannerLetterSpacing(json.letter_spacing ?? "");
-    setServersBannerSubtitleColor(json.subtitle_color ?? "");
-    setServersBannerTitleFontColor(json.title_font_color ?? "");
-    setServersBannerBackgroundColor(json.background_color ?? "");
-    setServersBannerBorderColor(json.border_color ?? "");
-    setServersBannerAnimation(json.animation ?? "");
+    setCitiesBannerEnabled(json.enabled !== false);
+    setCitiesBannerTitle(json.title ?? "");
+    setCitiesBannerSubtitle(json.subtitle ?? "");
+    setCitiesBannerFontFamily(json.font_family ?? "");
+    setCitiesBannerTitleFontSize(json.title_font_size != null ? String(json.title_font_size) : "");
+    setCitiesBannerSubtitleFontSize(json.subtitle_font_size != null ? String(json.subtitle_font_size) : "");
+    setCitiesBannerTitleFontWeight(json.title_font_weight ?? "");
+    setCitiesBannerLetterSpacing(json.letter_spacing ?? "");
+    setCitiesBannerSubtitleColor(json.subtitle_color ?? "");
+    setCitiesBannerTitleFontColor(json.title_font_color ?? "");
+    setCitiesBannerBackgroundColor(json.background_color ?? "");
+    setCitiesBannerBorderColor(json.border_color ?? "");
+    setCitiesBannerAnimation(json.animation ?? "");
+  }
+  async function loadGateBanner() {
+    const res = await fetch("/api/site-banner-gate", { cache: "no-store" });
+    const json = await res.json();
+    setGateBannerEnabled(json.enabled !== false);
+    setGateBannerTitle(json.title ?? "");
+    setGateBannerSubtitle(json.subtitle ?? "");
+    setGateBannerFontFamily(json.font_family ?? "");
+    setGateBannerTitleFontSize(json.title_font_size != null ? String(json.title_font_size) : "");
+    setGateBannerSubtitleFontSize(json.subtitle_font_size != null ? String(json.subtitle_font_size) : "");
+    setGateBannerTitleFontWeight(json.title_font_weight ?? "");
+    setGateBannerLetterSpacing(json.letter_spacing ?? "");
+    setGateBannerSubtitleColor(json.subtitle_color ?? "");
+    setGateBannerTitleFontColor(json.title_font_color ?? "");
+    setGateBannerBackgroundColor(json.background_color ?? "");
+    setGateBannerBorderColor(json.border_color ?? "");
+    setGateBannerAnimation(json.animation ?? "");
   }
 
   async function loadChatThreads() {
@@ -1241,7 +1271,7 @@ export default function AdminPage() {
   }
 
   async function refreshAll() {
-    await Promise.all([loadMlos(), loadRequests(), loadServers(), loadCreatorTiles(), loadBanner(), loadServersBanner(), loadChatThreads()]);
+    await Promise.all([loadMlos(), loadRequests(), loadServers(), loadCreatorTiles(), loadBanner(), loadCitiesBanner(), loadGateBanner(), loadChatThreads()]);
     setLastRefreshAt(new Date().toLocaleTimeString());
   }
 
@@ -1686,52 +1716,7 @@ export default function AdminPage() {
       <div className="header-logo-float">
         <img src="/mlomesh-logo.png" alt="MLOMesh logo" className="header-logo" />
       </div>
-      <header
-        className="site-header"
-        style={{
-          padding: "12px 16px",
-          backgroundColor: "#10162b",
-          backgroundImage: 'url("/header-bg.png")',
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          backgroundRepeat: "no-repeat",
-          color: "white",
-        }}
-      >
-        <div className="header-top">
-          <div className="header-brand">
-            <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1 }}>
-              MLOMESH
-            </div>
-          </div>
-          <div className="header-actions">
-            <LanguageSelect />
-            <AuthLink />
-            <DiscordLink />
-            
-          </div>
-        </div>
-        <nav className="header-nav">
-          <a href="/" className="header-link">
-            {t("nav.home")}
-          </a>
-          <a href="/map" className="header-link">
-            {t("nav.map")}
-          </a>
-          <a href="/about" className="header-link">
-            {t("nav.about")}
-          </a>
-          <a href="/creators" className="header-link header-link-creators">
-            {t("nav.creators")}
-          </a>
-          <a href="/servers" className="header-link header-link-servers">
-            {t("nav.servers")}
-          </a>
-          <a href="/submit" className="header-link">
-            {t("nav.submit")}
-          </a>
-        </nav>
-      </header>
+      <SiteHeader variant="map" />
       <div className="admin-page-wrap" style={{ padding: 20 }}>
         <h1>{t("admin.title")}</h1>
         <p style={{ marginTop: 8, marginBottom: 16, fontSize: 14, opacity: 0.9, maxWidth: 600 }}>
@@ -1839,7 +1824,7 @@ export default function AdminPage() {
           >
             Show all
           </button>
-          {(["addMlos", "statusBanner", "serversBanner", "liveChats", "editMlos", "creatorTiles", "creatorSpotlight", "review", "servers"] as const).map((id) => (
+          {(["addMlos", "statusBanner", "citiesBanner", "gateBanner", "liveChats", "editMlos", "creatorTiles", "creatorSpotlight", "review", "servers"] as const).map((id) => (
             <button
               key={id}
               type="button"
@@ -1856,8 +1841,9 @@ export default function AdminPage() {
               }}
             >
               {id === "addMlos" && "➕ Add MLOs"}
-              {id === "statusBanner" && "🏠 Status Banner"}
-              {id === "serversBanner" && "📺 Servers Banner"}
+              {id === "statusBanner" && "🏠 MLO Banner"}
+              {id === "citiesBanner" && "🌃 FiveM Banner"}
+              {id === "gateBanner" && "🚪 Gate Banner"}
               {id === "liveChats" && "💬 Live Chats"}
               {id === "editMlos" && "✏️ Edit MLOs"}
               {id === "creatorTiles" && "🌸 Creator Tiles"}
@@ -1958,8 +1944,8 @@ export default function AdminPage() {
           }}
         >
           <div>
-            <div style={{ fontWeight: 700, color: "#fbbf24" }}>🏠 {t("admin.editStatusBanner")}</div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Homepage — appears above the map</div>
+            <div style={{ fontWeight: 700, color: "#fbbf24" }}>🏠 MLO Homepage Banner</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>/mlo — message banner above hero</div>
           </div>
           <button onClick={() => setShowStatusBanner((v) => !v)}>
             {showStatusBanner ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
@@ -1968,7 +1954,7 @@ export default function AdminPage() {
         {showStatusBanner && (
           <>
           <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-            Customize the text and styling of the homepage banner (above the map).
+            Customize the message banner on the MLO homepage (/mlo).
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <input
@@ -2196,7 +2182,7 @@ export default function AdminPage() {
       </div>
       )}
 
-      {(activePanel === "all" || activePanel === "serversBanner") && (
+      {(activePanel === "all" || activePanel === "citiesBanner") && (
       <div
         style={{
           marginBottom: 12,
@@ -2212,279 +2198,499 @@ export default function AdminPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: showServersBanner ? 10 : 0,
+            marginBottom: showCitiesBanner ? 10 : 0,
             flexWrap: "wrap",
             gap: 8,
           }}
         >
           <div>
-            <div style={{ fontWeight: 700, color: "#60a5fa" }}>🌃 FiveM Servers Banner</div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>/servers page — appears above the server list</div>
+            <div style={{ fontWeight: 700, color: "#60a5fa" }}>🌃 FiveM Homepage Banner</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>/cities & /servers — message banner above hero</div>
           </div>
-          <button onClick={() => setShowServersBanner((v) => !v)}>
-            {showServersBanner ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
+          <button onClick={() => setShowCitiesBanner((v) => !v)}>
+            {showCitiesBanner ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
           </button>
         </div>
-        {showServersBanner && (
+        {showCitiesBanner && (
           <>
-            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-              Banner on the FiveM servers page (/servers). Toggle off to hide when nothing to announce.
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <input
-                type="checkbox"
-                id="servers-banner-enabled"
-                checked={serversBannerEnabled}
-                onChange={(e) => setServersBannerEnabled(e.target.checked)}
-                style={{ width: 18, height: 18, cursor: "pointer" }}
-              />
-              <label htmlFor="servers-banner-enabled" style={{ fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
-                Show banner on servers page
-              </label>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title</div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <input
-                    placeholder="FiveM Servers"
-                    value={serversBannerTitle}
-                    onChange={(e) => setServersBannerTitle(e.target.value)}
-                    style={{ padding: "8px 10px", fontSize: 13, width: "100%", maxWidth: 340, flex: 1, minWidth: 200 }}
-                  />
-                  <EmojiPickerDropdown onEmojiSelect={(emoji) => setServersBannerTitle((v) => v + emoji)} label="😀" />
-                </div>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            Customize the message banner on the FiveM Cities (/cities) and FiveM Hub (/servers) pages.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              id="cities-banner-enabled"
+              checked={citiesBannerEnabled}
+              onChange={(e) => setCitiesBannerEnabled(e.target.checked)}
+              style={{ width: 18, height: 18, cursor: "pointer" }}
+            />
+            <label htmlFor="cities-banner-enabled" style={{ fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
+              Show banner (uncheck to hide live)
+            </label>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.titleLabel")}</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  placeholder={t("admin.banner.titlePlaceholder")}
+                  value={citiesBannerTitle}
+                  onChange={(e) => setCitiesBannerTitle(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: "100%", maxWidth: 340, flex: 1, minWidth: 200 }}
+                />
+                <EmojiPickerDropdown onEmojiSelect={(emoji) => setCitiesBannerTitle((v) => v + emoji)} label="😀" />
               </div>
-              <div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Subtitle</div>
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
-                  <textarea
-                    placeholder="Browse RP cities, claim yours..."
-                    value={serversBannerSubtitle}
-                    onChange={(e) => setServersBannerSubtitle(e.target.value)}
-                    rows={4}
-                    style={{ display: "block", width: "100%", maxWidth: 520, padding: "8px 10px", fontSize: 13, borderRadius: 6, border: "1px solid #374151", background: "#111827", color: "#e5e7eb", resize: "vertical", minHeight: 80 }}
-                  />
-                  <EmojiPickerDropdown onEmojiSelect={(emoji) => setServersBannerSubtitle((v) => v + emoji)} label="😀" />
-                </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.subtitleLabel")}</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <textarea
+                  placeholder={t("admin.banner.subtitlePlaceholder")}
+                  value={citiesBannerSubtitle}
+                  onChange={(e) => setCitiesBannerSubtitle(e.target.value)}
+                  rows={4}
+                  style={{ display: "block", width: "100%", maxWidth: 520, padding: "8px 10px", fontSize: 13, borderRadius: 6, border: "1px solid #374151", background: "#111827", color: "#e5e7eb", resize: "vertical", minHeight: 80 }}
+                />
+                <EmojiPickerDropdown onEmojiSelect={(emoji) => setCitiesBannerSubtitle((v) => v + emoji)} label="😀" />
               </div>
+            </div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
               <div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Format preset</div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.fontFamily")}</div>
                 <select
-                  defaultValue=""
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (!v) return;
-                    const presets: Record<string, { font: string; titleSize: string; subtitleSize: string; weight: string; spacing: string; titleColor: string; subtitleColor: string; bg: string; border: string; animation: string }> = {
-                      neon: { font: "Bebas Neue", titleSize: "36", subtitleSize: "18", weight: "900", spacing: "1.2px", titleColor: "#ffffff", subtitleColor: "#67e8f9", bg: "#0f172a", border: "#22d3ee", animation: "flash" },
-                      urban: { font: "Montserrat", titleSize: "32", subtitleSize: "18", weight: "700", spacing: "0.5px", titleColor: "#fef3c7", subtitleColor: "#fbbf24", bg: "#1c1917", border: "#f59e0b", animation: "pulse" },
-                      sunset: { font: "Oswald", titleSize: "34", subtitleSize: "18", weight: "700", spacing: "1px", titleColor: "#ffffff", subtitleColor: "#fed7aa", bg: "linear-gradient(135deg,#7c2d12 0%,#c2410c 50%,#9a3412 100%)", border: "#ea580c", animation: "flash" },
-                      minimal: { font: "system-ui", titleSize: "28", subtitleSize: "16", weight: "600", spacing: "0.2px", titleColor: "#f8fafc", subtitleColor: "#94a3b8", bg: "#1e293b", border: "#475569", animation: "fade" },
-                    };
-                    const p = presets[v as keyof typeof presets];
-                    if (p) {
-                      setServersBannerFontFamily(p.font);
-                      setServersBannerTitleFontSize(p.titleSize);
-                      setServersBannerSubtitleFontSize(p.subtitleSize);
-                      setServersBannerTitleFontWeight(p.weight);
-                      setServersBannerLetterSpacing(p.spacing);
-                      setServersBannerTitleFontColor(p.titleColor);
-                      setServersBannerSubtitleColor(p.subtitleColor);
-                      setServersBannerBackgroundColor(p.bg);
-                      setServersBannerBorderColor(p.border);
-                      setServersBannerAnimation(p.animation);
-                    }
-                    e.target.value = "";
-                  }}
-                  style={{ padding: "8px 10px", fontSize: 13, minWidth: 180 }}
+                  value={citiesBannerFontFamily}
+                  onChange={(e) => setCitiesBannerFontFamily(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, minWidth: 160 }}
                 >
-                  <option value="">Apply preset…</option>
-                  <option value="neon">Neon Cyber — electric cyan on dark</option>
-                  <option value="urban">Urban Gold — amber & warm</option>
-                  <option value="sunset">Sunset — orange gradient</option>
-                  <option value="minimal">Minimal — clean slate</option>
+                  {BANNER_FONTS.map((f) => (
+                    <option key={f.value || "default"} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
                 </select>
               </div>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Font</div>
-                  <select
-                    value={serversBannerFontFamily}
-                    onChange={(e) => setServersBannerFontFamily(e.target.value)}
-                    style={{ padding: "8px 10px", fontSize: 13, minWidth: 160 }}
-                  >
-                    {BANNER_FONTS.map((f) => (
-                      <option key={f.value || "default"} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title size (px)</div>
-                  <input
-                    type="number"
-                    placeholder="28"
-                    value={serversBannerTitleFontSize}
-                    onChange={(e) => setServersBannerTitleFontSize(e.target.value)}
-                    style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Subtitle size (px)</div>
-                  <input
-                    type="number"
-                    placeholder="16"
-                    value={serversBannerSubtitleFontSize}
-                    onChange={(e) => setServersBannerSubtitleFontSize(e.target.value)}
-                    style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title weight (400–900)</div>
-                  <input
-                    placeholder="900"
-                    value={serversBannerTitleFontWeight}
-                    onChange={(e) => setServersBannerTitleFontWeight(e.target.value)}
-                    style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Letter spacing</div>
-                  <input
-                    placeholder="0.8px"
-                    value={serversBannerLetterSpacing}
-                    onChange={(e) => setServersBannerLetterSpacing(e.target.value)}
-                    style={{ padding: "8px 10px", fontSize: 13, width: 90 }}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Animation</div>
-                  <select
-                    value={serversBannerAnimation || "flash"}
-                    onChange={(e) => setServersBannerAnimation(e.target.value)}
-                    style={{ padding: "6px 8px", fontSize: 12, minWidth: 100 }}
-                  >
-                    <option value="none">None</option>
-                    <option value="flash">Flash</option>
-                    <option value="pulse">Pulse</option>
-                    <option value="fade">Fade</option>
-                  </select>
-                </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.titleFontSize")}</div>
+                <input
+                  type="number"
+                  placeholder="32"
+                  value={citiesBannerTitleFontSize}
+                  onChange={(e) => setCitiesBannerTitleFontSize(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                />
               </div>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Title color</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <input
-                      type="color"
-                      value={serversBannerTitleFontColor || "#ffffff"}
-                      onChange={(e) => setServersBannerTitleFontColor(e.target.value)}
-                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
-                    />
-                    <input
-                      value={serversBannerTitleFontColor}
-                      onChange={(e) => setServersBannerTitleFontColor(e.target.value)}
-                      placeholder="#ffffff"
-                      style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Subtitle color</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <input
-                      type="color"
-                      value={serversBannerSubtitleColor || "#fde68a"}
-                      onChange={(e) => setServersBannerSubtitleColor(e.target.value)}
-                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
-                    />
-                    <input
-                      value={serversBannerSubtitleColor}
-                      onChange={(e) => setServersBannerSubtitleColor(e.target.value)}
-                      placeholder="#fde68a"
-                      style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Background</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <input
-                      type="color"
-                      value={serversBannerBackgroundColor || "#1e293b"}
-                      onChange={(e) => setServersBannerBackgroundColor(e.target.value)}
-                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
-                    />
-                    <input
-                      value={serversBannerBackgroundColor}
-                      onChange={(e) => setServersBannerBackgroundColor(e.target.value)}
-                      placeholder="hex or gradient (blank=default)"
-                      style={{ padding: "6px 8px", fontSize: 12, width: 140 }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Border</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <input
-                      type="color"
-                      value={serversBannerBorderColor || "#3b82f6"}
-                      onChange={(e) => setServersBannerBorderColor(e.target.value)}
-                      style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
-                    />
-                    <input
-                      value={serversBannerBorderColor}
-                      onChange={(e) => setServersBannerBorderColor(e.target.value)}
-                      placeholder="#3b82f6"
-                      style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
-                    />
-                  </div>
-                </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.subtitleFontSize")}</div>
+                <input
+                  type="number"
+                  placeholder="20"
+                  value={citiesBannerSubtitleFontSize}
+                  onChange={(e) => setCitiesBannerSubtitleFontSize(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                />
               </div>
-              <button
-                disabled={serversBannerSaving}
-                onClick={async () => {
-                  if (!hasAuth) return;
-                  setServersBannerSaving(true);
-                  const titleSize = serversBannerTitleFontSize.trim() ? Number(serversBannerTitleFontSize) : null;
-                  const subtitleSize = serversBannerSubtitleFontSize.trim() ? Number(serversBannerSubtitleFontSize) : null;
-                  const res = await fetch("/api/site-banner-servers", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json", ...authHeaders() },
-                    body: JSON.stringify({
-                      enabled: serversBannerEnabled,
-                      title: serversBannerTitle.trim() || null,
-                      subtitle: serversBannerSubtitle.trim() || null,
-                      font_family: serversBannerFontFamily.trim() || null,
-                      title_font_size: titleSize,
-                      subtitle_font_size: subtitleSize,
-                      title_font_weight: serversBannerTitleFontWeight.trim() || null,
-                      letter_spacing: serversBannerLetterSpacing.trim() || null,
-                      subtitle_color: serversBannerSubtitleColor.trim() || null,
-                      title_font_color: serversBannerTitleFontColor.trim() || null,
-                      background_color: serversBannerBackgroundColor.trim() || null,
-                      border_color: serversBannerBorderColor.trim() || null,
-                      animation: serversBannerAnimation.trim() || null,
-                    }),
-                  });
-                  setServersBannerSaving(false);
-                  if (res.ok) loadServersBanner();
-                }}
-                style={{
-                  padding: "8px 14px",
-                  fontSize: 13,
-                  background: "#2563eb",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  alignSelf: "flex-start",
-                }}
-              >
-                {serversBannerSaving ? "..." : "Save"}
-              </button>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.fontWeight")}</div>
+                <input
+                  placeholder="900"
+                  value={citiesBannerTitleFontWeight}
+                  onChange={(e) => setCitiesBannerTitleFontWeight(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.letterSpacing")}</div>
+                <input
+                  placeholder="0.8px"
+                  value={citiesBannerLetterSpacing}
+                  onChange={(e) => setCitiesBannerLetterSpacing(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 90 }}
+                />
+              </div>
             </div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.titleColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={citiesBannerTitleFontColor || "#ffffff"}
+                    onChange={(e) => setCitiesBannerTitleFontColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={citiesBannerTitleFontColor}
+                    onChange={(e) => setCitiesBannerTitleFontColor(e.target.value)}
+                    placeholder="#ffffff"
+                    style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.subtitleColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={citiesBannerSubtitleColor || "#fde68a"}
+                    onChange={(e) => setCitiesBannerSubtitleColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={citiesBannerSubtitleColor}
+                    onChange={(e) => setCitiesBannerSubtitleColor(e.target.value)}
+                    placeholder="#fde68a"
+                    style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.backgroundColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={citiesBannerBackgroundColor || "#1e293b"}
+                    onChange={(e) => setCitiesBannerBackgroundColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={citiesBannerBackgroundColor}
+                    onChange={(e) => setCitiesBannerBackgroundColor(e.target.value)}
+                    placeholder={t("admin.banner.backgroundColorPlaceholder")}
+                    style={{ padding: "6px 8px", fontSize: 12, width: 110 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.borderColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={citiesBannerBorderColor || "#fbbf24"}
+                    onChange={(e) => setCitiesBannerBorderColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={citiesBannerBorderColor}
+                    onChange={(e) => setCitiesBannerBorderColor(e.target.value)}
+                    placeholder="#fbbf24"
+                    style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.animation")}</div>
+                <select
+                  value={citiesBannerAnimation || "flash"}
+                  onChange={(e) => setCitiesBannerAnimation(e.target.value)}
+                  style={{ padding: "6px 8px", fontSize: 12, minWidth: 100 }}
+                >
+                  <option value="none">{t("admin.banner.animationNone")}</option>
+                  <option value="flash">{t("admin.banner.animationFlash")}</option>
+                  <option value="pulse">{t("admin.banner.animationPulse")}</option>
+                  <option value="fade">{t("admin.banner.animationFade")}</option>
+                </select>
+              </div>
+            </div>
+            <button
+              disabled={citiesBannerSaving}
+              onClick={async () => {
+                if (!hasAuth) return;
+                setCitiesBannerSaving(true);
+                const titleSize = citiesBannerTitleFontSize.trim() ? Number(citiesBannerTitleFontSize) : null;
+                const subtitleSize = citiesBannerSubtitleFontSize.trim() ? Number(citiesBannerSubtitleFontSize) : null;
+                const res = await fetch("/api/site-banner-cities", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json", ...authHeaders() },
+                  body: JSON.stringify({
+                    enabled: citiesBannerEnabled,
+                    title: citiesBannerTitle.trim() || null,
+                    subtitle: citiesBannerSubtitle.trim() || null,
+                    font_family: citiesBannerFontFamily.trim() || null,
+                    title_font_size: titleSize,
+                    subtitle_font_size: subtitleSize,
+                    title_font_weight: citiesBannerTitleFontWeight.trim() || null,
+                    letter_spacing: citiesBannerLetterSpacing.trim() || null,
+                    subtitle_color: citiesBannerSubtitleColor.trim() || null,
+                    title_font_color: citiesBannerTitleFontColor.trim() || null,
+                    background_color: citiesBannerBackgroundColor.trim() || null,
+                    border_color: citiesBannerBorderColor.trim() || null,
+                    animation: citiesBannerAnimation.trim() || null,
+                  }),
+                });
+                setCitiesBannerSaving(false);
+                if (res.ok) loadCitiesBanner();
+              }}
+              style={{
+                padding: "8px 14px",
+                fontSize: 13,
+                background: "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                alignSelf: "flex-start",
+              }}
+            >
+              {citiesBannerSaving ? "..." : t("admin.saveBanner")}
+            </button>
+          </div>
+          </>
+        )}
+      </div>
+      )}
+
+      {(activePanel === "all" || activePanel === "gateBanner") && (
+      <div
+        style={{
+          marginBottom: 12,
+          border: "1px solid #243046",
+          borderLeft: "4px solid #a855f7",
+          borderRadius: 10,
+          padding: 12,
+          background: "#10162b",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: showGateBanner ? 10 : 0,
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, color: "#a78bfa" }}>🚪 Gate Page Banner</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>/ (gate) — message banner on choose page</div>
+          </div>
+          <button onClick={() => setShowGateBanner((v) => !v)}>
+            {showGateBanner ? `${t("admin.hide")} ▲` : `${t("admin.show")} ▼`}
+          </button>
+        </div>
+        {showGateBanner && (
+          <>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+            Customize the message banner on the gate page (/ when showing Choose what to explore).
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              id="gate-banner-enabled"
+              checked={gateBannerEnabled}
+              onChange={(e) => setGateBannerEnabled(e.target.checked)}
+              style={{ width: 18, height: 18, cursor: "pointer" }}
+            />
+            <label htmlFor="gate-banner-enabled" style={{ fontSize: 13, cursor: "pointer", fontWeight: 500 }}>
+              Show banner (uncheck to hide live)
+            </label>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.titleLabel")}</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  placeholder={t("admin.banner.titlePlaceholder")}
+                  value={gateBannerTitle}
+                  onChange={(e) => setGateBannerTitle(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: "100%", maxWidth: 340, flex: 1, minWidth: 200 }}
+                />
+                <EmojiPickerDropdown onEmojiSelect={(emoji) => setGateBannerTitle((v) => v + emoji)} label="😀" />
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.subtitleLabel")}</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <textarea
+                  placeholder={t("admin.banner.subtitlePlaceholder")}
+                  value={gateBannerSubtitle}
+                  onChange={(e) => setGateBannerSubtitle(e.target.value)}
+                  rows={4}
+                  style={{ display: "block", width: "100%", maxWidth: 520, padding: "8px 10px", fontSize: 13, borderRadius: 6, border: "1px solid #374151", background: "#111827", color: "#e5e7eb", resize: "vertical", minHeight: 80 }}
+                />
+                <EmojiPickerDropdown onEmojiSelect={(emoji) => setGateBannerSubtitle((v) => v + emoji)} label="😀" />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.fontFamily")}</div>
+                <select
+                  value={gateBannerFontFamily}
+                  onChange={(e) => setGateBannerFontFamily(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, minWidth: 160 }}
+                >
+                  {BANNER_FONTS.map((f) => (
+                    <option key={f.value || "default"} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.titleFontSize")}</div>
+                <input
+                  type="number"
+                  placeholder="32"
+                  value={gateBannerTitleFontSize}
+                  onChange={(e) => setGateBannerTitleFontSize(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.subtitleFontSize")}</div>
+                <input
+                  type="number"
+                  placeholder="20"
+                  value={gateBannerSubtitleFontSize}
+                  onChange={(e) => setGateBannerSubtitleFontSize(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.fontWeight")}</div>
+                <input
+                  placeholder="900"
+                  value={gateBannerTitleFontWeight}
+                  onChange={(e) => setGateBannerTitleFontWeight(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 72 }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.letterSpacing")}</div>
+                <input
+                  placeholder="0.8px"
+                  value={gateBannerLetterSpacing}
+                  onChange={(e) => setGateBannerLetterSpacing(e.target.value)}
+                  style={{ padding: "8px 10px", fontSize: 13, width: 90 }}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.titleColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={gateBannerTitleFontColor || "#ffffff"}
+                    onChange={(e) => setGateBannerTitleFontColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={gateBannerTitleFontColor}
+                    onChange={(e) => setGateBannerTitleFontColor(e.target.value)}
+                    placeholder="#ffffff"
+                    style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.subtitleColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={gateBannerSubtitleColor || "#fde68a"}
+                    onChange={(e) => setGateBannerSubtitleColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={gateBannerSubtitleColor}
+                    onChange={(e) => setGateBannerSubtitleColor(e.target.value)}
+                    placeholder="#fde68a"
+                    style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.backgroundColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={gateBannerBackgroundColor || "#1e293b"}
+                    onChange={(e) => setGateBannerBackgroundColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={gateBannerBackgroundColor}
+                    onChange={(e) => setGateBannerBackgroundColor(e.target.value)}
+                    placeholder={t("admin.banner.backgroundColorPlaceholder")}
+                    style={{ padding: "6px 8px", fontSize: 12, width: 110 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.borderColor")}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={gateBannerBorderColor || "#fbbf24"}
+                    onChange={(e) => setGateBannerBorderColor(e.target.value)}
+                    style={{ width: 36, height: 28, padding: 0, cursor: "pointer" }}
+                  />
+                  <input
+                    value={gateBannerBorderColor}
+                    onChange={(e) => setGateBannerBorderColor(e.target.value)}
+                    placeholder="#fbbf24"
+                    style={{ padding: "6px 8px", fontSize: 12, width: 90 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{t("admin.banner.animation")}</div>
+                <select
+                  value={gateBannerAnimation || "flash"}
+                  onChange={(e) => setGateBannerAnimation(e.target.value)}
+                  style={{ padding: "6px 8px", fontSize: 12, minWidth: 100 }}
+                >
+                  <option value="none">{t("admin.banner.animationNone")}</option>
+                  <option value="flash">{t("admin.banner.animationFlash")}</option>
+                  <option value="pulse">{t("admin.banner.animationPulse")}</option>
+                  <option value="fade">{t("admin.banner.animationFade")}</option>
+                </select>
+              </div>
+            </div>
+            <button
+              disabled={gateBannerSaving}
+              onClick={async () => {
+                if (!hasAuth) return;
+                setGateBannerSaving(true);
+                const titleSize = gateBannerTitleFontSize.trim() ? Number(gateBannerTitleFontSize) : null;
+                const subtitleSize = gateBannerSubtitleFontSize.trim() ? Number(gateBannerSubtitleFontSize) : null;
+                const res = await fetch("/api/site-banner-gate", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json", ...authHeaders() },
+                  body: JSON.stringify({
+                    enabled: gateBannerEnabled,
+                    title: gateBannerTitle.trim() || null,
+                    subtitle: gateBannerSubtitle.trim() || null,
+                    font_family: gateBannerFontFamily.trim() || null,
+                    title_font_size: titleSize,
+                    subtitle_font_size: subtitleSize,
+                    title_font_weight: gateBannerTitleFontWeight.trim() || null,
+                    letter_spacing: gateBannerLetterSpacing.trim() || null,
+                    subtitle_color: gateBannerSubtitleColor.trim() || null,
+                    title_font_color: gateBannerTitleFontColor.trim() || null,
+                    background_color: gateBannerBackgroundColor.trim() || null,
+                    border_color: gateBannerBorderColor.trim() || null,
+                    animation: gateBannerAnimation.trim() || null,
+                  }),
+                });
+                setGateBannerSaving(false);
+                if (res.ok) loadGateBanner();
+              }}
+              style={{
+                padding: "8px 14px",
+                fontSize: 13,
+                background: "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                alignSelf: "flex-start",
+              }}
+            >
+              {gateBannerSaving ? "..." : t("admin.saveBanner")}
+            </button>
+          </div>
           </>
         )}
       </div>

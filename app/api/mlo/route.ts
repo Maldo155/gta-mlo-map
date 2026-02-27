@@ -19,7 +19,9 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ mlos: data });
+  const res = NextResponse.json({ mlos: data });
+  res.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+  return res;
 }
 
 /* =========================

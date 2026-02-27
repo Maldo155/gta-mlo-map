@@ -14,19 +14,22 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get("next") || "/servers";
   const nextPath = next.startsWith("/") ? next : "/servers";
 
-  // In dev: NEXT_PUBLIC_APP_URL forces origin (fixes redirect-to-production). Else use Host header.
-  // In prod: use x-forwarded-host or request URL.
+  // Origin for redirect URLs. NEXT_PUBLIC_APP_URL in dev forces the callback to stay on localhost.
   const host = request.headers.get("host");
   const protocol =
     process.env.NODE_ENV === "production" ? "https" : (requestUrl.protocol || "http:").replace(/:$/, "");
+  const isLocalhost = host && /localhost|127\.0\.0\.1/i.test(host);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   const origin =
-    process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_APP_URL
-      ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
-      : process.env.NODE_ENV === "production" && request.headers.get("x-forwarded-host")
-        ? `https://${request.headers.get("x-forwarded-host")}`
-        : host
-          ? `${protocol}://${host}`
-          : requestUrl.origin;
+    process.env.NODE_ENV !== "production" && appUrl
+      ? appUrl
+      : isLocalhost && host
+        ? `${protocol}://${host}`
+        : process.env.NODE_ENV === "production" && request.headers.get("x-forwarded-host")
+          ? `https://${request.headers.get("x-forwarded-host")}`
+          : host
+            ? `${protocol}://${host}`
+            : requestUrl.origin;
 
   const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 

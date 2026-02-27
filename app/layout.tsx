@@ -119,16 +119,20 @@ export default function RootLayout({
       >
         <ErrorBoundary>
           <LanguageProvider>
-            {children}
-            <footer className="site-footer">
-              <div className="footer-brand">MLOMesh</div>
-              <div className="footer-tagline">
-                Interactive MLO discovery hub for creators and players.
+            <div className="site-layout-wrap">
+              <div className="site-content-wrap">
+                {children}
               </div>
-              <div className="footer-copyright">
-                © {year} MLOMesh. All rights reserved.
-              </div>
-            </footer>
+              <footer className="site-footer">
+                <div className="footer-brand">MLOMesh</div>
+                <div className="footer-tagline">
+                  Interactive MLO discovery hub for creators and players.
+                </div>
+                <div className="footer-copyright">
+                  © {year} MLOMesh. All rights reserved.
+                </div>
+              </footer>
+            </div>
             <LiveChat floating={true} />
             <VisitCounter />
           </LanguageProvider>

@@ -14,18 +14,22 @@ export async function GET(request: Request) {
     requestUrl.searchParams.get("error_description") ||
     requestUrl.searchParams.get("error");
 
-  // Use Host header for redirect origin. In dev, NEXT_PUBLIC_APP_URL overrides (fixes redirect-to-production).
+  // Origin: NEXT_PUBLIC_APP_URL in dev forces redirect back to localhost.
   const host = request.headers.get("host");
   const protocol =
     process.env.NODE_ENV === "production" ? "https" : (requestUrl.protocol || "http:").replace(/:$/, "");
+  const isLocalhost = host && /localhost|127\.0\.0\.1/i.test(host);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   const origin =
-    process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_APP_URL
-      ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
-      : process.env.NODE_ENV !== "production" && host
+    process.env.NODE_ENV !== "production" && appUrl
+      ? appUrl
+      : isLocalhost && host
         ? `${protocol}://${host}`
-        : process.env.NODE_ENV === "production" && request.headers.get("x-forwarded-host")
-          ? `https://${request.headers.get("x-forwarded-host")}`
-          : requestUrl.origin;
+        : process.env.NODE_ENV !== "production" && host
+          ? `${protocol}://${host}`
+          : process.env.NODE_ENV === "production" && request.headers.get("x-forwarded-host")
+            ? `https://${request.headers.get("x-forwarded-host")}`
+            : requestUrl.origin;
 
   if (errorParam) {
     const debugParams = new URLSearchParams({

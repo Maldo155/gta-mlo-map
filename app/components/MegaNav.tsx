@@ -30,9 +30,9 @@ export default function MegaNav() {
       href: "/servers",
       labelKey: "nav.servers",
       extraClass: "header-link-servers",
-      desc: "FiveM servers",
+      desc: "FiveM cities",
     },
-    { href: "/submit", labelKey: "nav.submit", desc: "Submit MLOs & servers" },
+    { href: "/submit", labelKey: "nav.submit", desc: "Submit MLOs & Cities" },
   ];
 
   const clearCloseTimer = () => {

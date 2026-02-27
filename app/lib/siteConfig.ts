@@ -1,8 +1,7 @@
 /**
  * Site config – flip flags to switch features without deleting code.
- * Set useMegaNav to false to revert to the classic top nav.
  */
 export const siteConfig = {
-  /** Use mega-nav (hover dropdown) instead of classic link bar */
-  useMegaNav: true,
+  /** Nav style: "actionWheel" = GTA-style radial menu, "expandable" = horizontal spread on hover, "mega" = dropdown, "classic" = always-visible links */
+  navStyle: "actionWheel" as "actionWheel" | "expandable" | "mega" | "classic",
 } as const;

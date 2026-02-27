@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import type { Server } from "@/app/lib/serverTags";
-import AuthLink from "@/app/components/AuthLink";
-import DiscordLink from "@/app/components/DiscordLink";
-import LanguageSelect from "@/app/components/LanguageSelect";
+import SiteHeader from "@/app/components/SiteHeader";
 import { useLanguage } from "@/app/components/LanguageProvider";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 import {
@@ -29,24 +27,7 @@ function EditPageLayout({ children, t }: { children: React.ReactNode; t: (key: s
         <div className="header-logo-float">
           <img src="/mlomesh-logo.png" alt="MLOMesh" className="header-logo" />
         </div>
-        <header className="site-header" style={{ padding: "12px 16px", backgroundColor: "#10162b", backgroundImage: "url('/header-bg.png')", backgroundSize: "cover", color: "white" }}>
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-            </div>
-          </div>
-          <nav className="header-nav">
-            <a href="/" className="header-link">{t("nav.home")}</a>
-            <a href="/map" className="header-link">{t("nav.map")}</a>
-            <a href="/about" className="header-link">{t("nav.about")}</a>
-            <a href="/creators" className="header-link header-link-creators">{t("nav.creators")}</a>
-            <a href="/servers" className="header-link header-link-servers">{t("nav.servers")}</a>
-            <a href="/submit" className="header-link">{t("nav.submit")}</a>
-          </nav>
-        </header>
+        <SiteHeader />
         {children}
       </div>
     </main>

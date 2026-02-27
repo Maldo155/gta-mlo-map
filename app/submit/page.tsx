@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CategoryKey } from "@/app/lib/categories";
 import CategorySelect from "../components/CategorySelect";
-import AuthLink from "../components/AuthLink";
-import DiscordLink from "../components/DiscordLink";
-import LanguageSelect from "../components/LanguageSelect";
+import SiteHeader from "../components/SiteHeader";
 import { useLanguage } from "../components/LanguageProvider";
 
 type FormState = "idle" | "sending" | "sent" | "error";
@@ -132,47 +130,7 @@ export default function SubmitPage() {
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "16px 24px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            color: "white",
-          }}
-        >
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-            </div>
-          </div>
-          <nav className="header-nav">
-            <a href="/" className="header-link">
-              {t("nav.home")}
-            </a>
-            <a href="/map" className="header-link">
-              {t("nav.map")}
-            </a>
-            <a href="/about" className="header-link">
-              {t("nav.about")}
-            </a>
-          <a href="/creators" className="header-link header-link-creators">
-            {t("nav.creators")}
-          </a>
-          <a href="/servers" className="header-link header-link-servers">
-            {t("nav.servers")}
-          </a>
-          <a href="/submit" className="header-link">
-              {t("nav.submit")}
-            </a>
-          </nav>
-        </header>
+        <SiteHeader />
 
         <div className="submit-page-wrap" style={{ maxWidth: 720, margin: "0 auto", padding: 20 }}>
           <button onClick={handleBack} style={{ marginBottom: 12 }}>

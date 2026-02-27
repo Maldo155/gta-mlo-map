@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
-import AuthLink from "@/app/components/AuthLink";
-import DiscordLink from "@/app/components/DiscordLink";
-import LanguageSelect from "@/app/components/LanguageSelect";
+import SiteHeader from "@/app/components/SiteHeader";
 import { useLanguage } from "@/app/components/LanguageProvider";
 import { getSupabaseBrowser } from "@/app/lib/supabaseBrowser";
 import {
@@ -270,35 +268,7 @@ export default function SubmitServerPage() {
               className="header-logo"
             />
           </div>
-          <header
-            className="site-header"
-            style={{
-              padding: "12px 16px",
-              backgroundColor: "#10162b",
-              backgroundImage: 'url("/header-bg.png")',
-              backgroundSize: "cover",
-              backgroundPosition: "center top",
-              backgroundRepeat: "no-repeat",
-              color: "white",
-            }}
-          >
-            <div className="header-top">
-              <div className="header-brand" />
-              <div className="header-actions">
-                <LanguageSelect />
-                <AuthLink />
-                <DiscordLink />
-              </div>
-            </div>
-            <nav className="header-nav">
-              <a href="/" className="header-link">Home</a>
-              <a href="/map" className="header-link">Map</a>
-              <a href="/about" className="header-link">About</a>
-              <a href="/creators" className="header-link header-link-creators">MLO Creators</a>
-              <a href="/servers" className="header-link header-link-servers">Servers</a>
-              <a href="/submit" className="header-link">Submit</a>
-            </nav>
-          </header>
+          <SiteHeader />
           <section
             style={{
               maxWidth: 420,
@@ -362,47 +332,7 @@ export default function SubmitServerPage() {
             className="header-logo"
           />
         </div>
-        <header
-          className="site-header"
-          style={{
-            padding: "12px 16px",
-            backgroundColor: "#10162b",
-            backgroundImage: 'url("/header-bg.png")',
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
-            backgroundRepeat: "no-repeat",
-            color: "white",
-          }}
-        >
-          <div className="header-top">
-            <div className="header-brand" />
-            <div className="header-actions">
-              <LanguageSelect />
-              <AuthLink />
-              <DiscordLink />
-            </div>
-          </div>
-          <nav className="header-nav">
-            <a href="/" className="header-link">
-              {t("nav.home")}
-            </a>
-            <a href="/map" className="header-link">
-              {t("nav.map")}
-            </a>
-            <a href="/about" className="header-link">
-              {t("nav.about")}
-            </a>
-            <a href="/creators" className="header-link header-link-creators">
-              {t("nav.creators")}
-            </a>
-            <a href="/servers" className="header-link header-link-servers">
-              {t("nav.servers")}
-            </a>
-            <a href="/submit" className="header-link">
-              {t("nav.submit")}
-            </a>
-          </nav>
-        </header>
+        <SiteHeader />
 
         <div
           className="servers-submit-form"
@@ -439,7 +369,7 @@ export default function SubmitServerPage() {
                 fontSize: 14,
               }}
             >
-              ← Back to Servers
+              {t("servers.backToCities")}
             </a>
             <button
               type="button"
