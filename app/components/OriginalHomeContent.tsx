@@ -757,6 +757,7 @@ function OriginalHomeContent() {
           {t("home.conveyor.title")}
         </div>
         <div
+          className="mlo-conveyor-viewport"
           style={{
             position: "relative",
             width: "100%",
@@ -1109,6 +1110,7 @@ function OriginalHomeContent() {
               {t("home.cities.conveyor.title")}
             </div>
             <div
+              className="conveyor-viewport"
               style={{
                 position: "relative",
                 width: "100%",
@@ -1394,6 +1396,7 @@ function OriginalHomeContent() {
                   {t("home.conveyor.title")}
                 </div>
                 <div
+                  className="mlo-conveyor-viewport"
                   style={{
                     position: "relative",
                     width: "100%",

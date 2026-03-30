@@ -60,6 +60,9 @@ export default function ActionWheelNav() {
   }, [clearCloseTimer]);
 
   const handleLeave = useCallback(() => {
+    if (typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0)) {
+      return;
+    }
     scheduleClose();
   }, [scheduleClose]);
 
@@ -84,7 +87,16 @@ export default function ActionWheelNav() {
         aria-expanded={open}
         aria-haspopup="true"
         tabIndex={0}
-        onClick={handleTriggerClick}
+        onClick={(e) => {
+          if ((e as React.MouseEvent).detail === 0) return;
+          handleTriggerClick();
+        }}
+        onPointerDown={(e) => {
+          if (e.pointerType === "touch") {
+            e.preventDefault();
+            handleTriggerClick();
+          }
+        }}
       >
         <span className="action-wheel-trigger-icon">≡</span>
         <span className="action-wheel-trigger-label">Menu</span>
@@ -95,7 +107,10 @@ export default function ActionWheelNav() {
           className="action-wheel-dropdown"
           role="menu"
           onMouseEnter={clearCloseTimer}
-          onMouseLeave={scheduleClose}
+          onMouseLeave={() => {
+            if (typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0)) return;
+            scheduleClose();
+          }}
         >
           <div className="action-wheel-dropdown-center">
             {hoveredItem ? t(hoveredItem.labelKey) : "Menu"}

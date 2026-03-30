@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "./LanguageProvider";
 
 const GATE_STORAGE_KEY = "mlomesh-home-preference";
-const GATE_CLICKS_KEY = "mlomesh-gate-clicks";
 
 export function setHomePreference(pref: "mlo" | "cities") {
   if (typeof window !== "undefined") {
@@ -17,24 +16,6 @@ export function getHomePreference(): "mlo" | "cities" | null {
   const v = localStorage.getItem(GATE_STORAGE_KEY);
   if (v === "mlo" || v === "cities") return v;
   return null;
-}
-
-function getGateClicks(): Record<"mlo" | "map" | "cities", number> {
-  if (typeof window === "undefined") return { mlo: 0, map: 0, cities: 0 };
-  try {
-    const raw = localStorage.getItem(GATE_CLICKS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return { mlo: +parsed.mlo || 0, map: +parsed.map || 0, cities: +parsed.cities || 0 };
-    }
-  } catch {}
-  return { mlo: 0, map: 0, cities: 0 };
-}
-
-function incrementGateClick(tile: "mlo" | "map" | "cities") {
-  if (typeof window === "undefined") return;
-  const next = { ...getGateClicks(), [tile]: getGateClicks()[tile] + 1 };
-  localStorage.setItem(GATE_CLICKS_KEY, JSON.stringify(next));
 }
 
 const MLO_FALLBACK = "/maps/find-mlos-tile.png";
@@ -147,7 +128,6 @@ export default function HomeGate({
   serverImages?: string[];
 }) {
   const { t } = useLanguage();
-  const [clicks, setClicks] = useState<Record<"mlo" | "map" | "cities", number>>(() => ({ mlo: 0, map: 0, cities: 0 }));
   const [banner, setBanner] = useState<{
     title: string | null;
     subtitle: string | null;
@@ -163,10 +143,6 @@ export default function HomeGate({
     border_color?: string | null;
     animation?: string | null;
   } | null>(null);
-
-  useEffect(() => {
-    setClicks(getGateClicks());
-  }, []);
 
   useEffect(() => {
     function fetchBanner() {
@@ -195,11 +171,6 @@ export default function HomeGate({
     const interval = setInterval(fetchBanner, 15_000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleClick = (tile: "mlo" | "map" | "cities") => {
-    incrementGateClick(tile);
-    setClicks(getGateClicks());
-  };
 
   return (
     <>
@@ -318,10 +289,7 @@ export default function HomeGate({
       >
         <a
           href="/mlo"
-          onClick={() => {
-            setHomePreference("mlo");
-            handleClick("mlo");
-          }}
+          onClick={() => setHomePreference("mlo")}
           className="home-gate-tile-link"
           style={{ textDecoration: "none" }}
         >
@@ -365,15 +333,11 @@ export default function HomeGate({
               <div className="home-gate-tile-desc" style={{ marginTop: 8, color: "#7dd3fc", fontSize: 15 }}>
                 {t("home.gate.mlo.desc")}
               </div>
-              <div style={{ marginTop: "auto", paddingTop: 12, textAlign: "center", fontSize: 13, opacity: 0.7 }}>
-                {t("home.gate.clicks", { count: clicks.mlo })}
-              </div>
             </div>
           </div>
         </a>
         <a
           href="/map"
-          onClick={() => handleClick("map")}
           className="home-gate-tile-link"
           style={{ textDecoration: "none" }}
         >
@@ -422,18 +386,12 @@ export default function HomeGate({
               <div className="home-gate-tile-desc" style={{ marginTop: 8, color: "#6ee7b7", fontSize: 15 }}>
                 {t("home.gate.map.desc")}
               </div>
-              <div style={{ marginTop: "auto", paddingTop: 12, textAlign: "center", fontSize: 13, opacity: 0.7 }}>
-                {t("home.gate.clicks", { count: clicks.map })}
-              </div>
             </div>
           </div>
         </a>
         <a
           href="/cities"
-          onClick={() => {
-            setHomePreference("cities");
-            handleClick("cities");
-          }}
+          onClick={() => setHomePreference("cities")}
           className="home-gate-tile-link"
           style={{ textDecoration: "none" }}
         >
@@ -476,9 +434,6 @@ export default function HomeGate({
               )}
               <div className="home-gate-tile-desc" style={{ marginTop: 8, color: "#c4a574", fontSize: 15 }}>
                 {t("home.gate.cities.desc")}
-              </div>
-              <div style={{ marginTop: "auto", paddingTop: 12, textAlign: "center", fontSize: 13, opacity: 0.7 }}>
-                {t("home.gate.clicks", { count: clicks.cities })}
               </div>
             </div>
           </div>

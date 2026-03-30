@@ -335,7 +335,7 @@ export default function HomeSplitContent({
 
         <div style={{ fontSize: 14, fontWeight: 700, color: "#22d3ee" }}>{t("home.conveyor.title")}</div>
         {mlos.length > 0 ? (
-          <div style={maskStyle}>
+          <div className="mlo-conveyor-viewport" style={maskStyle}>
             <div
               className="mlo-conveyor-track"
               style={{

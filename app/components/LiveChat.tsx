@@ -6,6 +6,13 @@ import { useLanguage } from "./LanguageProvider";
 const CHAT_STORAGE_KEY = "mlomesh_chat_thread";
 const POLL_INTERVAL_MS = 5000;
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidThreadId(id: string | null): id is string {
+  return typeof id === "string" && UUID_RE.test(id.trim());
+}
+
 type Message = {
   id: string;
   content: string;
@@ -43,7 +50,10 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem(CHAT_STORAGE_KEY) : null;
-    if (stored) setThreadId(stored);
+    if (stored && isValidThreadId(stored)) setThreadId(stored.trim());
+    else if (stored) {
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+    }
   }, []);
 
   // Listen for global "open live chat" event (e.g. from Contact section "Live Chat" link)
@@ -59,14 +69,16 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
 
   useEffect(() => {
     if (open && threadId) {
-      fetch(`/api/chat?threadId=${threadId}`)
-        .then((r) => r.json())
-        .then((d) => setMessages(Array.isArray(d?.messages) ? d.messages : []))
-        .catch(() => setMessages([]));
+      const applyMessages = (r: Response, d: { messages?: unknown }) => {
+        if (!r.ok) return;
+        if (Array.isArray(d?.messages)) setMessages(d.messages as Message[]);
+      };
+      fetch(`/api/chat?threadId=${encodeURIComponent(threadId)}`)
+        .then(async (r) => applyMessages(r, await r.json().catch(() => ({}))))
+        .catch(() => {});
       pollRef.current = setInterval(() => {
-        fetch(`/api/chat?threadId=${threadId}`)
-          .then((r) => r.json())
-          .then((d) => setMessages(Array.isArray(d?.messages) ? d.messages : []))
+        fetch(`/api/chat?threadId=${encodeURIComponent(threadId)}`)
+          .then(async (r) => applyMessages(r, await r.json().catch(() => ({}))))
           .catch(() => {});
       }, POLL_INTERVAL_MS);
     }
@@ -131,19 +143,33 @@ export default function LiveChat({ floating = true, open: controlledOpen, onOpen
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      setError(data.error || "Failed to send");
+      const errMsg = typeof data.error === "string" ? data.error : "Failed to send";
+      if (
+        res.status === 400 &&
+        errMsg.toLowerCase().includes("invalid chat")
+      ) {
+        if (typeof window !== "undefined") localStorage.removeItem(CHAT_STORAGE_KEY);
+        setThreadId(null);
+        setMessages([]);
+      }
+      setError(errMsg);
       setStatus("error");
       setInputMessage(msg);
       return;
     }
 
     setStatus("idle");
-    if (data.threadId) {
-      setThreadId(data.threadId);
-      localStorage.setItem(CHAT_STORAGE_KEY, data.threadId);
+    if (data.threadId && isValidThreadId(String(data.threadId))) {
+      const tid = String(data.threadId).trim();
+      setThreadId(tid);
+      localStorage.setItem(CHAT_STORAGE_KEY, tid);
     }
     if (Array.isArray(data.messages) && data.messages.length) {
-      setMessages((m) => [...m, ...data.messages]);
+      if (data.isNewThread) {
+        setMessages(data.messages as Message[]);
+      } else {
+        setMessages((m) => [...m, ...(data.messages as Message[])]);
+      }
     }
   }
 

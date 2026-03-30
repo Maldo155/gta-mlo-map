@@ -1,7 +1,13 @@
 "use client";
 
+import { useState, useCallback, useRef, useEffect } from "react";
+import DiscordInviteCard from "./DiscordInviteCard";
+
 const DISCORD_URL =
   process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/4hBjVkew";
+/** Server ID: Server Settings → Widget → enable, then copy Server ID. Fallback = MLOMesh server */
+const DISCORD_SERVER_ID =
+  process.env.NEXT_PUBLIC_DISCORD_SERVER_ID || "1468638822882607500";
 
 const DiscordLogo = () => (
   <svg
@@ -15,8 +21,69 @@ const DiscordLogo = () => (
   </svg>
 );
 
+function useClickOutside(
+  ref: React.RefObject<HTMLElement | null>,
+  onOutside: () => void,
+  enabled: boolean
+) {
+  useEffect(() => {
+    if (!enabled) return;
+    const handle = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onOutside();
+    };
+    document.addEventListener("mousedown", handle);
+    document.addEventListener("touchstart", handle, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handle);
+      document.removeEventListener("touchstart", handle);
+    };
+  }, [ref, onOutside, enabled]);
+}
+
 export default function DiscordLink() {
-  if (DISCORD_URL) {
+  const [open, setOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  useClickOutside(wrapRef, () => setOpen(false), open);
+
+  const clearTimer = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleClose = useCallback(() => {
+    clearTimer();
+    closeTimerRef.current = setTimeout(() => setOpen(false), 150);
+  }, [clearTimer]);
+
+  const handleEnter = useCallback(() => {
+    clearTimer();
+    setOpen(true);
+  }, [clearTimer]);
+
+  const handleLeave = useCallback(() => scheduleClose(), [scheduleClose]);
+
+  const handleClick = useCallback(() => {
+    setOpen((o) => !o);
+  }, []);
+
+  const hasWidget = Boolean(DISCORD_SERVER_ID?.trim());
+
+  if (!DISCORD_URL) {
+    return (
+      <span
+        className="header-pill"
+        title="Discord"
+        style={{ display: "inline-flex", alignItems: "center", padding: "6px 10px" }}
+      >
+        <DiscordLogo />
+      </span>
+    );
+  }
+
+  if (!hasWidget) {
     return (
       <a
         href={DISCORD_URL}
@@ -31,9 +98,45 @@ export default function DiscordLink() {
       </a>
     );
   }
+
   return (
-    <span className="header-pill" title="Discord" style={{ display: "inline-flex", alignItems: "center", padding: "6px 10px" }}>
-      <DiscordLogo />
-    </span>
+    <div
+      ref={wrapRef}
+      className="discord-dropdown-wrap"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      style={{ position: "relative" }}
+    >
+      <button
+        type="button"
+        onClick={handleClick}
+        className="header-pill"
+        title="Discord"
+        aria-label="Discord"
+        aria-expanded={open}
+        aria-haspopup="true"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "6px 10px",
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        <DiscordLogo />
+      </button>
+      {open && (
+        <div
+          className="discord-widget-dropdown"
+          onMouseEnter={clearTimer}
+          onMouseLeave={scheduleClose}
+          role="dialog"
+          aria-label="Discord community"
+        >
+          <DiscordInviteCard />
+        </div>
+      )}
+    </div>
   );
 }
